@@ -20,8 +20,6 @@ def read_map():
                         temp_array.append(TILE(num_counter, line_counter, int(tile), True))
                     case "3":
                         temp_array.append(TILE(num_counter, line_counter, int(tile), True))
-                    case "4":
-                        temp_array.append(TILE(num_counter, line_counter, int(tile), False))
 
                 num_counter += 1
             map_array.append(temp_array)
