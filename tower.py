@@ -13,6 +13,7 @@ class TOWER:
         self.last_fired = -1
         self.circle_counter = 0
         self.color = color
+        self.rect = pygame.Rect(0,0,0,0)
 
         match self.tower_type:
             case "basic":
@@ -22,6 +23,7 @@ class TOWER:
                 self.damage = 1  # 1 damage
                 self.fire_rate = 300  # 5 shots per second
                 self.bullet_speed = 20  # 50 pixels per second
+                self.cost = get_tower_cost(self.tower_type)
             case "circle":
                 self.radius = 500  # 500 pixels
                 self.radius_rect_circle = pygame.Rect((self.x * COL_SIZE) - self.radius / 2,
@@ -29,12 +31,14 @@ class TOWER:
                 self.damage = 1  # 1 damage
                 self.fire_rate = 200  # 5 shots per second
                 self.bullet_speed = 20  # 50 pixels per second
+                self.cost = get_tower_cost(self.tower_type)
             case "arc":
                 self.radius = 50000 #500 pixels
                 self.radius_rect_circle = pygame.Rect((self.x*COL_SIZE)-self.radius/2, self.y*ROW_SIZE-self.radius/2, self.radius, self.radius)
                 self.damage = 1 #1 damage
                 self.fire_rate = 100 #5 shots per second
                 self.bullet_speed = 20 #50 pixels per second
+                self.cost = get_tower_cost(self.tower_type)
 
     def fire(self, enemy):
         now = pygame.time.get_ticks()
@@ -95,3 +99,17 @@ class TOWER:
                     self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_neg, dy_neg, self.bullet_speed, self.radius, self.damage))
                     #self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_half, dy_half, self.bullet_speed, self.radius, self.damage))
                     #self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_calf, dy_calf, self.bullet_speed, self.radius, self.damage))
+
+    def draw(self, screen, radius):
+        return pygame.draw.circle(screen,self.color, (self.x, self.y),radius)
+
+def get_tower_cost(tower_type):
+    val = 0
+    match tower_type:
+        case "basic":
+            val = 300
+        case "circle":
+            val = 500
+        case "arc":
+            val = 200
+    return val
