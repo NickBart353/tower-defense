@@ -10,17 +10,18 @@ class ENEMY:
         self.damage = damage
         self.movement_interval = 200
         self.last_time_moved = 0
+        self.last_hit_by = None
 
 def get_enemy_list(wave_number):
     enemies = []
     match wave_number:
         case 0:
             for i in range(10):
-                enemies.append(ENEMY(5, 5))
+                enemies.append(ENEMY(2, 5))
         case 1:
             for i in range(10):
-                enemies.append(ENEMY(10, 5))
+                enemies.append(ENEMY(5, 5))
         case 2:
             for i in range(20):
-                enemies.append(ENEMY(10, 5))
+                enemies.append(ENEMY(5, 5))
     return enemies

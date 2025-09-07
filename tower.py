@@ -18,6 +18,14 @@ class TOWER:
         self.upgrade_one_counter = 0
         self.upgrade_two_counter = 0
         self.upgrade_three_counter = 0
+        self.bullet_size = COL_SIZE // 6
+        self.pierce = 1
+        self.upgrade_one_maxed = False
+        self.upgrade_two_maxed = False
+        self.upgrade_three_maxed = False
+        self.can_upgrade_one = True
+        self.can_upgrade_two = True
+        self.can_upgrade_three = True
         self.cost = get_tower_cost(self.tower_type)
 
     def fire(self, enemy):
@@ -53,33 +61,57 @@ class BasicTower(TOWER):
             if self.upgrade_one_counter > 0:
                 self.bullet_list.append(
                     BULLET(self.x + 0.5, self.y + 0.5, enemy.x - self.x + 0.35, enemy.y - self.y + 0.35, self.bullet_speed,
-                           self.radius, self.damage))
+                           self.radius, self.damage, self.bullet_size, self.pierce))
                 self.bullet_list.append(
                     BULLET(self.x + 0.5, self.y + 0.5, enemy.x - self.x - 0.35, enemy.y - self.y - 0.35, self.bullet_speed,
-                           self.radius, self.damage))
+                           self.radius, self.damage, self.bullet_size, self.pierce))
                 self.bullet_list.append(
                     BULLET(self.x + 0.5, self.y + 0.5, enemy.x - self.x, enemy.y - self.y, self.bullet_speed,
-                           self.radius, self.damage))
+                           self.radius, self.damage, self.bullet_size, self.pierce))
             else:
                 self.bullet_list.append(
                     BULLET(self.x + 0.5, self.y + 0.5, enemy.x - self.x, enemy.y - self.y, self.bullet_speed,
-                           self.radius, self.damage))
+                           self.radius, self.damage, self.bullet_size, self.pierce))
 
     def upgrade_one(self):
-        match self.upgrade_one_counter:
-            case 0:
-                self.upgrade_one_counter += 1
-            case 1:
-                self.upgrade_one_counter += 1
-                self.damage += 2
-            case 2:
-                self.upgrade_one_counter += 1
-                self.fire_rate -= 150
+        if not self.upgrade_one_maxed:
+            match self.upgrade_one_counter:
+                case 0:
+                    self.upgrade_one_counter += 1
+                case 1:
+                    self.upgrade_one_counter += 1
+                    self.damage += 2
+                case 2:
+                    self.upgrade_one_maxed = True
+                    self.fire_rate -= 150
 
     def upgrade_two(self):
-        pass
+        if not self.upgrade_two_maxed:
+            match self.upgrade_two_counter:
+                case 0:
+                    self.upgrade_two_counter += 1
+                    self.pierce = 2
+                case 1:
+                    self.upgrade_two_counter += 1
+                    self.pierce = 4
+                case 2:
+                    self.upgrade_two_maxed = True
+                    self.pierce = 999999
+
     def upgrade_three(self):
-        pass
+        if not self.upgrade_three_maxed:
+            match self.upgrade_three_counter:
+                case 0:
+                    self.upgrade_three_counter += 1
+                    self.pierce = 999999
+                    self.bullet_size *= 5
+                case 1:
+                    self.upgrade_three_counter += 1
+                    self.damage += 5
+                case 2:
+                    self.upgrade_three_maxed = True
+                    self.damage += 5
+
 
 class CircleTower(TOWER):
     def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color):
@@ -96,21 +128,21 @@ class CircleTower(TOWER):
         if now > self.fire_rate + self.last_fired:
             self.last_fired = now
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 0, -1, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, 0, -1, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 0, 1, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, 0, 1, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 1, 0, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, 1, 0, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, -1, 0, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, -1, 0, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 0.5, 0.5, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, 0.5, 0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 0.5, -0.5, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, 0.5, -0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, -0.5, 0.5, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, -0.5, 0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, -0.5, -0.5, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, -0.5, -0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
 
 class ArcTower(TOWER):
     def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color):
@@ -148,9 +180,9 @@ class ArcTower(TOWER):
             dx_calf = math.cos(angle2) * -1
             dy_calf = math.sin(angle2) * -1
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, dx_pos, dy_pos, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, dx_pos, dy_pos, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, dx_neg, dy_neg, self.bullet_speed, self.radius, self.damage))
+                BULLET(self.x + 0.5, self.y + 0.5, dx_neg, dy_neg, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             # self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_half, dy_half, self.bullet_speed, self.radius, self.damage))
             # self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_calf, dy_calf, self.bullet_speed, self.radius, self.damage))
 

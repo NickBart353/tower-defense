@@ -24,9 +24,15 @@ class WAVE:
             return None
 
 def init_waves():
-    waves = [WAVE(0,get_enemy_list(1),1000),
-             WAVE(1,get_enemy_list(1),1000),
-             WAVE(2,get_enemy_list(1),1000),
+    waves = [WAVE(0,get_enemy_list(0),2000),
+             WAVE(1,get_enemy_list(0),2000),
+             WAVE(2,get_enemy_list(0),2000),
+             WAVE(3, get_enemy_list(0), 2000),
+             WAVE(4, get_enemy_list(0), 2000),
+             WAVE(5, get_enemy_list(0), 2000),
+             WAVE(6, get_enemy_list(0), 2000),
+             WAVE(7, get_enemy_list(0), 2000),
+             WAVE(8, get_enemy_list(0), 2000),
 
              ]
 

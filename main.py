@@ -28,7 +28,7 @@ class GAME:
         self.running = True
         self.game_running = True
         self.inventory_open = False
-        self.updates_open = False
+        self.upgrades_open = False
         self.mouse_clicked = False
         self.mouse_clicked_once = False
         self.move_pink_tower = False
@@ -70,22 +70,31 @@ class GAME:
                                         lambda: self.skip_button(),
                                         color_default = (100, 100, 100), color_hover = (150, 150, 150))
 
+        self.upgrade_one_color = (23, 48, 138)
+        self.upgrade_one_color_hover = (23, 48, 168)
+
+        self.upgrade_two_color = (23, 138, 48)
+        self.upgrade_two_color_hover = (23, 168, 48)
+
+        self.upgrade_three_color = (138, 48, 23)
+        self.upgrade_three_color_hover = (168, 48, 23)
+
         self.upgrade_button_one = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 3 + self.header_size + 1, self.COL_SIZE - 2,
                                 self.ROW_SIZE - 2,
                                 lambda: self.buy_upgrade_one(),
-                                color_default=(23, 48, 138), color_hover=(103, 68, 168))
+                                color_default=self.upgrade_one_color, color_hover=self.upgrade_one_color_hover)
 
         self.upgrade_button_two = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 5 + self.header_size + 1,
                                          self.COL_SIZE - 2,
                                          self.ROW_SIZE - 2,
                                          lambda: self.buy_upgrade_two(),
-                                         color_default=(23, 48, 138), color_hover=(103, 68, 168))
+                                         color_default=self.upgrade_two_color, color_hover=self.upgrade_two_color_hover)
 
         self.upgrade_button_three = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 7 + self.header_size + 1,
                                          self.COL_SIZE - 2,
                                          self.ROW_SIZE - 2,
                                          lambda: self.buy_upgrade_three(),
-                                         color_default=(23, 48, 138), color_hover=(103, 68, 168))
+                                         color_default=self.upgrade_three_color, color_hover=self.upgrade_three_color_hover)
 
         #enemy and wave
         self.wave_list = init_waves()
@@ -325,24 +334,90 @@ class GAME:
 
     def draw_upgrade_overlay(self):
 
-        if self.updates_open:
+        if self.upgrades_open:
             self.screen.blit(self.upgrade_overlay, (0, self.header_size))
             self.screen.blit(self.font.render("Upgrades", True, (0,0,0)), (1 * self.COL_SIZE, self.header_size))
 
+            upgrade_one_cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"]
+            upgrade_one_text = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["text"]
+
+            upgrade_two_cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["2"]["{}".format(self.tower_to_upgrade.upgrade_two_counter)]["cost"]
+            upgrade_two_text = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["2"]["{}".format(self.tower_to_upgrade.upgrade_two_counter)]["text"]
+
+            upgrade_three_cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"]["{}".format(self.tower_to_upgrade.upgrade_three_counter)]["cost"]
+            upgrade_three_text = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"]["{}".format(self.tower_to_upgrade.upgrade_three_counter)]["text"]
+
+            self.upgrade_one_color = (23, 48, 138)
+            self.upgrade_one_color_hover = (23, 48, 168)
+
+            self.upgrade_two_color = (23, 138, 48)
+            self.upgrade_two_color_hover = (23, 168, 48)
+
+            self.upgrade_three_color = (138, 48, 23)
+            self.upgrade_three_color_hover = (168, 48, 23)
+
+            if self.tower_to_upgrade.upgrade_one_maxed:
+                upgrade_one_cost = "-"
+                upgrade_one_text = "Max"
+                self.upgrade_one_color = (100, 100, 100)
+                self.upgrade_one_color_hover = (100, 100, 100)
+
+            if self.tower_to_upgrade.upgrade_two_maxed:
+                upgrade_two_cost = "-"
+                upgrade_two_text = "Max"
+                self.upgrade_two_color = (100, 100, 100)
+                self.upgrade_two_color_hover = (100, 100, 100)
+
+            if self.tower_to_upgrade.upgrade_three_maxed:
+                upgrade_three_cost = "-"
+                upgrade_three_text = "Max"
+                self.upgrade_three_color = (100, 100, 100)
+                self.upgrade_three_color_hover = (100, 100, 100)
+
+            if self.tower_to_upgrade.upgrade_one_counter >= 1 and self.tower_to_upgrade.upgrade_two_counter >= 1:
+                upgrade_three_cost = "-"
+                upgrade_three_text = "N.A."
+                self.tower_to_upgrade.can_upgrade_three = False
+
+            if self.tower_to_upgrade.upgrade_one_counter >= 1 and self.tower_to_upgrade.upgrade_three_counter >= 1:
+                upgrade_two_cost = "-"
+                upgrade_two_text = "N.A."
+                self.tower_to_upgrade.can_upgrade_two = False
+
+            if self.tower_to_upgrade.upgrade_two_counter >= 1 and self.tower_to_upgrade.upgrade_three_counter >= 1:
+                upgrade_one_cost = "-"
+                upgrade_one_text = "N.A."
+                self.tower_to_upgrade.can_upgrade_one = False
+
+            if (self.tower_to_upgrade.upgrade_one_maxed or self.tower_to_upgrade.upgrade_two_maxed) and self.tower_to_upgrade.upgrade_three_counter == 2:
+                upgrade_three_cost = "-"
+                upgrade_three_text = "Capped"
+                self.tower_to_upgrade.can_upgrade_three = False
+
+            if (self.tower_to_upgrade.upgrade_one_maxed or self.tower_to_upgrade.upgrade_three_maxed) and self.tower_to_upgrade.upgrade_two_counter == 2:
+                upgrade_two_cost = "-"
+                upgrade_two_text = "Capped"
+                self.tower_to_upgrade.can_upgrade_two = False
+
+            if (self.tower_to_upgrade.upgrade_three_maxed or self.tower_to_upgrade.upgrade_two_maxed) and self.tower_to_upgrade.upgrade_one_counter == 2:
+                upgrade_one_cost = "-"
+                upgrade_one_text = "Capped"
+                self.tower_to_upgrade.can_upgrade_one = False
+
             self.tower_to_upgrade.display_upgrades()
-            self.display_single_upgrade(self.upgrade_button_one, self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"], self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["text"])
-            self.display_single_upgrade(self.upgrade_button_two, self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["2"]["{}".format(self.tower_to_upgrade.upgrade_two_counter)]["cost"], self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["2"]["{}".format(self.tower_to_upgrade.upgrade_two_counter)]["text"])
-            self.display_single_upgrade(self.upgrade_button_three, self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"]["{}".format(self.tower_to_upgrade.upgrade_three_counter)]["cost"], self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"]["{}".format(self.tower_to_upgrade.upgrade_three_counter)]["text"])
+            self.display_single_upgrade(self.upgrade_button_one, upgrade_one_cost, upgrade_one_text)
+            self.display_single_upgrade(self.upgrade_button_two, upgrade_two_cost, upgrade_two_text)
+            self.display_single_upgrade(self.upgrade_button_three, upgrade_three_cost, upgrade_three_text)
 
         if self.tower_to_upgrade is not None:
-            if self.tower_to_upgrade.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and self.updates_open:
-                self.updates_open = False
+            if self.tower_to_upgrade.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and self.upgrades_open:
+                self.upgrades_open = False
                 self.tower_to_upgrade = None
                 self.mouse_clicked_once = False
 
         for tower in self.tower_list:
-            if tower.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and not self.updates_open:
-                self.updates_open = True
+            if tower.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and not self.upgrades_open:
+                self.upgrades_open = True
                 self.inventory_open = False
                 self.tower_to_upgrade = tower
                 self.mouse_clicked_once = False
@@ -350,7 +425,7 @@ class GAME:
     def draw_bullets(self):
         for tower in self.tower_list:
             for bullet in tower.bullet_list:
-                bullet.bullet_rect = pygame.draw.circle(self.screen, (255, 0, 0), (bullet.my_x*self.COL_SIZE, (bullet.my_y*self.ROW_SIZE)+self.header_size), self.COL_SIZE // 6)
+                bullet.bullet_rect = pygame.draw.circle(self.screen, (255, 0, 0), (bullet.my_x*self.COL_SIZE, (bullet.my_y*self.ROW_SIZE)+self.header_size), bullet.size)
 
                 ang = math.atan2(bullet.y_vec, bullet.x_vec)
                 bullet.my_x += math.cos(ang) * bullet.velocity * self.delta_time
@@ -445,14 +520,16 @@ class GAME:
             for bullet in tower.bullet_list:
                 for enemy in self.enemy_list:
                     if enemy.enemy_rect.colliderect(bullet.bullet_rect):
-                        enemy.current_health -= bullet.damage
-                        if bullet in tower.bullet_list: tower.bullet_list.remove(bullet)
+                        if not enemy.last_hit_by == bullet:
+                            enemy.current_health -= bullet.damage
+                            enemy.last_hit_by = bullet
+                            bullet.pierce -= 1
+                            if bullet.pierce <= 0:
+                                if bullet in tower.bullet_list: tower.bullet_list.remove(bullet)
                     if enemy.current_health <= 0:
                         if enemy in self.enemy_list: self.enemy_list.remove(enemy)
 
     def display_single_upgrade(self, button, cost, text):
-        # pygame.draw.rect(self.screen, (0, 0, 0),
-        #                  (self.COL_SIZE * 1, self.ROW_SIZE * 3 + self.header_size, self.COL_SIZE, self.ROW_SIZE))
         upgrade_rect = button.draw_from_color(self.screen)
         button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
@@ -469,21 +546,21 @@ class GAME:
     def buy_upgrade_one(self):
         cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"][
             "{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"]
-        if cost <= self.player_money:
+        if cost <= self.player_money and self.upgrades_open and not self.tower_to_upgrade.upgrade_one_maxed and self.tower_to_upgrade.can_upgrade_one:
             self.tower_to_upgrade.upgrade_one()
             self.player_money -= cost
 
     def buy_upgrade_two(self):
         cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["2"][
             "{}".format(self.tower_to_upgrade.upgrade_two_counter)]["cost"]
-        if cost <= self.player_money:
+        if cost <= self.player_money and self.upgrades_open and not self.tower_to_upgrade.upgrade_two_maxed and self.tower_to_upgrade.can_upgrade_two:
             self.tower_to_upgrade.upgrade_two()
             self.player_money -= cost
 
     def buy_upgrade_three(self):
         cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"][
             "{}".format(self.tower_to_upgrade.upgrade_three_counter)]["cost"]
-        if cost <= self.player_money:
+        if cost <= self.player_money and self.upgrades_open and not self.tower_to_upgrade.upgrade_three_maxed and self.tower_to_upgrade.can_upgrade_three:
             self.tower_to_upgrade.upgrade_three()
             self.player_money -= cost
 
@@ -492,7 +569,7 @@ class GAME:
     def overlay_button(self):
         if not self.inventory_open:
             self.inventory_open = True
-            self.updates_open = False
+            self.upgrades_open = False
         elif self.inventory_open:
             self.inventory_open = False
 
