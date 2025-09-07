@@ -19,15 +19,18 @@ class BUTTON:
         self.clicked = False
 
     def draw_from_color(self,screen):
+        rect = 0
         if not self.hovered:
-            pygame.draw.rect(screen, self.color_default, self.rect)
+            rect = pygame.draw.rect(screen, self.color_default, self.rect)
         else:
-            pygame.draw.rect(screen, self.color_hover, self.rect)
+            rect = pygame.draw.rect(screen, self.color_hover, self.rect)
 
         if self.text and self.font and self.text_color:
             centered_text = self.font.render(self.text, True, self.text_color)
             text_rect = centered_text.get_rect(center=(self.width/2 + self.start_x, self.height/2 + self.start_y))
             screen.blit(centered_text, text_rect)
+
+        return rect
 
     def check_collision(self, mouse_pos, mouse_click):
         if self.rect.collidepoint(mouse_pos):

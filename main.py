@@ -8,13 +8,14 @@ from bullet import *
 from wave import *
 from button import BUTTON
 from timed_text import TIMER
+from upgrade import *
 
 class GAME:
     def __init__(self):
         #important stuff
         self.right_mouse_clicked = False
-        self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
-        #self.screen = pygame.display.set_mode((1400,700))
+        #self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode((1400,700))
         self.clock = pygame.time.Clock()
         self.delta_time = 0
 
@@ -69,6 +70,23 @@ class GAME:
                                         lambda: self.skip_button(),
                                         color_default = (100, 100, 100), color_hover = (150, 150, 150))
 
+        self.upgrade_button_one = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 3 + self.header_size + 1, self.COL_SIZE - 2,
+                                self.ROW_SIZE - 2,
+                                lambda: self.buy_upgrade_one(),
+                                color_default=(23, 48, 138), color_hover=(103, 68, 168))
+
+        self.upgrade_button_two = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 5 + self.header_size + 1,
+                                         self.COL_SIZE - 2,
+                                         self.ROW_SIZE - 2,
+                                         lambda: self.buy_upgrade_two(),
+                                         color_default=(23, 48, 138), color_hover=(103, 68, 168))
+
+        self.upgrade_button_three = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 7 + self.header_size + 1,
+                                         self.COL_SIZE - 2,
+                                         self.ROW_SIZE - 2,
+                                         lambda: self.buy_upgrade_three(),
+                                         color_default=(23, 48, 138), color_hover=(103, 68, 168))
+
         #enemy and wave
         self.wave_list = init_waves()
         self.wave_counter = 0
@@ -96,6 +114,9 @@ class GAME:
         self.player_money = 500
         self.score = 0
         self.highscore = 0
+
+        #upgrade data
+        self.tower_upgrade_data = get_basic_upgrade_data()
 
     def get_start_and_endpoint(self):
         start_point, end_point = {"x": 0, "y": 0}, {"x": 0, "y": 0}
@@ -308,6 +329,11 @@ class GAME:
             self.screen.blit(self.upgrade_overlay, (0, self.header_size))
             self.screen.blit(self.font.render("Upgrades", True, (0,0,0)), (1 * self.COL_SIZE, self.header_size))
 
+            self.tower_to_upgrade.display_upgrades()
+            self.display_single_upgrade(self.upgrade_button_one, self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"], self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["text"])
+            self.display_single_upgrade(self.upgrade_button_two, self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["2"]["{}".format(self.tower_to_upgrade.upgrade_two_counter)]["cost"], self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["2"]["{}".format(self.tower_to_upgrade.upgrade_two_counter)]["text"])
+            self.display_single_upgrade(self.upgrade_button_three, self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"]["{}".format(self.tower_to_upgrade.upgrade_three_counter)]["cost"], self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"]["{}".format(self.tower_to_upgrade.upgrade_three_counter)]["text"])
+
         if self.tower_to_upgrade is not None:
             if self.tower_to_upgrade.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and self.updates_open:
                 self.updates_open = False
@@ -361,15 +387,15 @@ class GAME:
 
     def move_towers(self):
 
-        if self.cost_dict["circle"] <= self.player_money:
+        if self.cost_dict["circle"] <= self.player_money and self.inventory_open:
             self.move_pink_tower = self.check_clicked_tower(self.pink_tower, self.move_pink_tower)
             self.click_and_drag_tower(self.move_pink_tower, self.pink_color, "circle")
 
-        if self.cost_dict["basic"] <= self.player_money:
+        if self.cost_dict["basic"] <= self.player_money and self.inventory_open:
             self.move_gray_tower = self.check_clicked_tower(self.gray_tower, self.move_gray_tower)
             self.click_and_drag_tower(self.move_gray_tower, self.gray_color, "basic")
 
-        if self.cost_dict["arc"] <= self.player_money:
+        if self.cost_dict["arc"] <= self.player_money and self.inventory_open:
             self.move_orange_tower = self.check_clicked_tower(self.orange_tower, self.move_orange_tower)
             self.click_and_drag_tower(self.move_orange_tower, self.orange_color, "arc")
 
@@ -382,14 +408,21 @@ class GAME:
             moving_bool = True
         return moving_bool
 
-    def click_and_drag_tower(self, moving_bool, color, turret_type):
+    def click_and_drag_tower(self, moving_bool, color, tower_type):
         if moving_bool:
             tower_rect = pygame.draw.circle(self.screen, color, pygame.mouse.get_pos(),self.COL_SIZE // 2)
             for tower_point in self.tower_point_list:
                 if tower_rect.colliderect((tower_point["x"] * self.COL_SIZE, tower_point["y"] * self.ROW_SIZE+self.header_size, self.COL_SIZE,self.ROW_SIZE)) and not self.mouse_clicked and self.tower_counter > 0:
                     if not tower_point["has_tower"]:
-                        self.tower_list.append(TOWER(tower_point["x"], tower_point["y"],turret_type, self.COL_SIZE, self.ROW_SIZE, color))
-                        self.player_money -= self.cost_dict[turret_type]
+                        match tower_type:
+                            case "basic":
+                                self.tower_list.append(BasicTower(tower_point["x"], tower_point["y"],tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                            case "circle":
+                                self.tower_list.append(CircleTower(tower_point["x"], tower_point["y"], tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                            case "arc":
+                                self.tower_list.append(ArcTower(tower_point["x"], tower_point["y"], tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+
+                        self.player_money -= self.cost_dict[tower_type]
                         self.tower_counter -= 1
                         tower_point["has_tower"] = True
                     else:
@@ -416,6 +449,45 @@ class GAME:
                         if bullet in tower.bullet_list: tower.bullet_list.remove(bullet)
                     if enemy.current_health <= 0:
                         if enemy in self.enemy_list: self.enemy_list.remove(enemy)
+
+    def display_single_upgrade(self, button, cost, text):
+        # pygame.draw.rect(self.screen, (0, 0, 0),
+        #                  (self.COL_SIZE * 1, self.ROW_SIZE * 3 + self.header_size, self.COL_SIZE, self.ROW_SIZE))
+        upgrade_rect = button.draw_from_color(self.screen)
+        button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+        upgrade_box_text = self.font.render("{}$".format(cost), True, (255, 255, 255))
+        text_rect = upgrade_box_text.get_rect(
+            center=(upgrade_rect.width / 2 + upgrade_rect.x, upgrade_rect.height / 2 + upgrade_rect.y))
+        self.screen.blit(upgrade_box_text, text_rect)
+
+        upgrade_text = self.font.render("{}".format(text), True, (0, 0, 0))
+        text_rect = upgrade_box_text.get_rect(
+            center=(upgrade_rect.x * 2.6, upgrade_rect.height / 2 + upgrade_rect.y))
+        self.screen.blit(upgrade_text, text_rect)
+
+    def buy_upgrade_one(self):
+        cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"][
+            "{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"]
+        if cost <= self.player_money:
+            self.tower_to_upgrade.upgrade_one()
+            self.player_money -= cost
+
+    def buy_upgrade_two(self):
+        cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["2"][
+            "{}".format(self.tower_to_upgrade.upgrade_two_counter)]["cost"]
+        if cost <= self.player_money:
+            self.tower_to_upgrade.upgrade_two()
+            self.player_money -= cost
+
+    def buy_upgrade_three(self):
+        cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"][
+            "{}".format(self.tower_to_upgrade.upgrade_three_counter)]["cost"]
+        if cost <= self.player_money:
+            self.tower_to_upgrade.upgrade_three()
+            self.player_money -= cost
+
+    #buttons
 
     def overlay_button(self):
         if not self.inventory_open:
