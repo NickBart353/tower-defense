@@ -19,7 +19,6 @@ class BUTTON:
         self.clicked = False
 
     def draw_from_color(self,screen):
-        rect = 0
         if not self.hovered:
             rect = pygame.draw.rect(screen, self.color_default, self.rect)
         else:
@@ -29,8 +28,6 @@ class BUTTON:
             centered_text = self.font.render(self.text, True, self.text_color)
             text_rect = centered_text.get_rect(center=(self.width/2 + self.start_x, self.height/2 + self.start_y))
             screen.blit(centered_text, text_rect)
-
-
 
         return rect
 

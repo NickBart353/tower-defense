@@ -12,11 +12,12 @@ from upgrade import *
 from tile import *
 
 class GAME:
+    # <editor-fold desc="init funcs">
     def __init__(self):
         #important stuff
         self.right_mouse_clicked = False
-        #self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
-        self.screen = pygame.display.set_mode((1400,700))
+        self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
+        #self.screen = pygame.display.set_mode((1400,700))
         self.clock = pygame.time.Clock()
         self.delta_time = 0
 
@@ -27,7 +28,11 @@ class GAME:
 
         #bools
         self.running = True
-        self.game_running = True
+        self.game_running = False
+        self.pause_menu = False
+        self.main_menu = True
+        self.map_picker = False
+
         self.inventory_open = False
         self.upgrades_open = False
         self.mouse_clicked = False
@@ -35,23 +40,17 @@ class GAME:
         self.move_pink_tower = False
         self.move_orange_tower = None
         self.move_gray_tower = None
-        self.pause_menu = False
 
         #map
-        self.arr = read_map()
+        self.map_dict = get_map_data()
+        self.arr = read_map(self.map_dict["0"]["file"])
         self.COL, self.ROW = len(self.arr[0]), len(self.arr)
         self.COL_SIZE, self.ROW_SIZE = self.screen.get_width()/self.COL, (self.screen.get_height()) / (self.ROW+1)
 
-        self.path = []
-        temp_status = 0
-        for i in range(len(self.arr) * len(self.arr[0])):
-            for line in self.arr:
-                for tile in line:
-                    if tile.field_type == (i+1):
-                        self.path.append(tile)
+        self.start_point, self.end_point, self.END = 0, 0, 0
 
-        self.start_point, self.end_point = self.get_start_and_endpoint()
-        self.END = int(len(self.path))
+        self.path = []
+        self.map_selection = None
 
         #ui
         self.sidebar_size = self.COL_SIZE*6
@@ -164,13 +163,19 @@ class GAME:
                 if tile.field_type == 0:
                         tower_point_list.append({"x": tile.x, "y": tile.y, "has_tower": False})
         return tower_point_list
+    # </editor-fold>
 
+    # <editor-fold desc="loops">
     def main_loop(self):
         while self.running:
             if self.game_running:
                 self.game_loop()
             if self.pause_menu:
                 self.pause_loop()
+            if self.main_menu:
+                self.main_menu_loop()
+            if self.map_picker:
+                self.map_pick_loop()
 
     def game_loop(self):
 
@@ -188,22 +193,21 @@ class GAME:
 
             self.draw_bullets()
 
-            self.draw_header()
-
             self.towers_fire()
 
             self.check_bullet_enemy_collision()
 
             self.draw_player_health_bar()
 
-            if self.inventory_open:
-                self.draw_tower_overlay()
+            self.check_player_health()
 
-            self.draw_upgrade_overlay()
+            self.draw_tower_overlay()
 
             self.move_towers()
 
-            self.check_player_health()
+            self.draw_upgrade_overlay()
+
+            self.draw_header()
 
             if not self.wave_timer.played_wave_timer:
                 self.wave_timer.count_down_text(self.screen)
@@ -241,11 +245,87 @@ class GAME:
 
             self.get_events()
 
+    def main_menu_loop(self):
+        title_screen_image = pygame.image.load("assets/img/main-menu/title_screen.png").convert()
+        title_screen_image = pygame.transform.scale(title_screen_image, (self.screen.get_width(), self.screen.get_height()))
+
+        start_game_button = BUTTON(self.screen.get_width()/2-80, self.screen.get_height()/2-100, 160, 50,
+                                   lambda: self.play_game(),
+                                   text = "Play", color_default=(0,225,0), color_hover=(0,255,0), font = self.font, text_color=(0,0,0))
+
+        quit_game_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 , 160, 50,
+                                   lambda: self.exit_game_button(),
+                                   text="Quit", color_default=(225, 0, 0), color_hover=(255, 0, 0), font=self.font, text_color=(0,0,0))
+
+        while self.main_menu:
+            self.screen.blit(title_screen_image, (0, 0))
+
+            start_game_button.draw_from_color(self.screen)
+            start_game_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            quit_game_button.draw_from_color(self.screen)
+            quit_game_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            self.delta_time = self.clock.tick(60) / 1000
+            pygame.display.update()
+
+            self.get_events()
+
+    def map_pick_loop(self):
+        title_screen_image_blurred = pygame.image.load("assets/img/main-menu/title_screen_blurred.png").convert()
+        title_screen_image_blurred = pygame.transform.scale(title_screen_image_blurred, (self.screen.get_width(), self.screen.get_height()))
+
+        select_map_button = BUTTON(self.screen.get_width()/2-150, self.screen.get_height() / 1.1, 300, 50,
+                                   lambda: self.select_and_play_map(),
+                                   text = "Select   Map", color_default=(0,225,0), color_hover=(0,255,0), font = self.font, text_color=(0,0,0))
+
+        back_button = BUTTON(self.screen.get_width() / 20, self.screen.get_height() / 1.1  , 160, 50,
+                                   lambda: self.back_to_main_menu(),
+                                   text="Back", color_default=(225, 0, 0), color_hover=(255, 0, 0), font=self.font, text_color=(0,0,0))
+
+        map_button_list = []
+        temp_counter = 0
+        square_width = self.screen.get_width() / 6
+        square_height = 300
+        total_squares_width = 3 * square_width
+        total_gap_width = self.screen.get_width() - total_squares_width
+        gap_size = total_gap_width / 4
+
+        for i, (key, value) in enumerate(self.map_dict.items()):
+            map_button_list.append(BUTTON((gap_size * (temp_counter + 1)) + (square_width * temp_counter), self.screen.get_height() / 3, square_width, square_height,
+                                          lambda: self.select_map(i),
+                                          color_default=(value["background_color"]), color_hover=(255, 255, 255)))
+            temp_counter += 1
+            if temp_counter == 3: temp_counter = 0
+
+        while self.map_picker:
+            self.screen.blit(title_screen_image_blurred, (0, 0))
+
+            for i, button in enumerate(map_button_list):
+                if i == self.map_selection:
+                    pygame.draw.rect(self.screen, (0,0,0), (button.rect.x-2, button.rect.y-2, button.rect.width+4, button.rect.height+4))
+                button.draw_from_color(self.screen)
+                button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            select_map_button.draw_from_color(self.screen)
+            select_map_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            back_button.draw_from_color(self.screen)
+            back_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            self.delta_time = self.clock.tick(60) / 1000
+            pygame.display.update()
+
+            self.mouse_clicked_once = False
+            self.get_events()
+
+    # </editor-fold>
+
+    # <editor-fold desc="funcs & more">
     def get_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.game_running = False
-                self.running = False
+                self.exit_game_button()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.pause_button()
@@ -284,18 +364,20 @@ class GAME:
             for tile in line:
                 match tile.field_type:
                     case 0:
-                        tile.rect = pygame.draw.rect(self.screen, (0,120,30),
-                                                     (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
+                        tile.rect = pygame.draw.rect(self.screen, self.map_dict[str(self.map_selection)]["background_color"],
+                                         (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
                     case 1:
-                        tile.rect = pygame.draw.rect(self.screen, (0,0,200),
+                        tile.rect = pygame.draw.rect(self.screen, self.map_dict[str(self.map_selection)]["start_color"],
                                          (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
                     case self.END:
-                        tile.rect = pygame.draw.rect(self.screen, (250, 250, 0),
+                        tile.rect = pygame.draw.rect(self.screen, self.map_dict[str(self.map_selection)]["end_color"],
+                                         (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
+                    case -1:
+                        tile.rect = pygame.draw.rect(self.screen, self.map_dict[str(self.map_selection)]["obstacle_color"],
                                          (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
                     case _:
-                        tile.rect = pygame.draw.rect(self.screen, (115, 72, 23),
-                                                 (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE) + self.header_size,
-                                                  self.COL_SIZE, self.ROW_SIZE))
+                        tile.rect = pygame.draw.rect(self.screen, self.map_dict[str(self.map_selection)]["path_color"],
+                                         (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE) + self.header_size,self.COL_SIZE, self.ROW_SIZE))
 
     def draw_enemies(self):
         for enemy in self.enemy_list:
@@ -345,27 +427,34 @@ class GAME:
                                      (tower.y * self.ROW_SIZE + self.ROW_SIZE * 0.5)+self.header_size), self.COL_SIZE // 2)
 
     def draw_tower_overlay(self):
-        self.screen.blit(self.tower_overlay, (0, self.header_size))
+        if self.inventory_open:
+            self.screen.blit(self.tower_overlay, (0, self.header_size))
 
-        temp_pink_tower = TOWER(1 * self.COL_SIZE, 4 * self.ROW_SIZE, "circle", self.COL_SIZE, self.ROW_SIZE, self.pink_color)
-        temp_gray_tower = TOWER(1 * self.COL_SIZE, 5 * self.ROW_SIZE, "basic", self.COL_SIZE, self.ROW_SIZE, self.gray_color)
-        temp_orange_tower = TOWER(1 * self.COL_SIZE, 6 * self.ROW_SIZE, "arc", self.COL_SIZE, self.ROW_SIZE, self.orange_color)
+            temp_pink_tower = TOWER(1 * self.COL_SIZE, 4 * self.ROW_SIZE, "circle", self.COL_SIZE, self.ROW_SIZE, self.pink_color)
+            temp_gray_tower = TOWER(1 * self.COL_SIZE, 5 * self.ROW_SIZE, "basic", self.COL_SIZE, self.ROW_SIZE, self.gray_color)
+            temp_orange_tower = TOWER(1 * self.COL_SIZE, 6 * self.ROW_SIZE, "arc", self.COL_SIZE, self.ROW_SIZE, self.orange_color)
 
-        self.pink_tower = temp_pink_tower.draw(self.screen, self.COL_SIZE // 2)
-        self.gray_tower = temp_gray_tower.draw(self.screen, self.COL_SIZE // 2)
-        self.orange_tower = temp_orange_tower.draw(self.screen, self.COL_SIZE // 2)
+            self.pink_tower = temp_pink_tower.draw(self.screen, self.COL_SIZE // 2)
+            self.gray_tower = temp_gray_tower.draw(self.screen, self.COL_SIZE // 2)
+            self.orange_tower = temp_orange_tower.draw(self.screen, self.COL_SIZE // 2)
 
-        self.screen.blit(self.font.render("{}".format(temp_pink_tower.cost),True,(0,0,0)),(2 * self.COL_SIZE, 3.5 * self.ROW_SIZE))
-        self.screen.blit(self.font.render("{}".format(temp_gray_tower.cost), True, (0, 0, 0)), (2 * self.COL_SIZE, 4.5 * self.ROW_SIZE))
-        self.screen.blit(self.font.render("{}".format(temp_orange_tower.cost), True, (0, 0, 0)),(2 * self.COL_SIZE, 5.5 * self.ROW_SIZE))
+            self.screen.blit(self.font.render("{}".format(temp_pink_tower.cost),True,(0,0,0)),(2 * self.COL_SIZE, 3.5 * self.ROW_SIZE))
+            self.screen.blit(self.font.render("{}".format(temp_gray_tower.cost), True, (0, 0, 0)), (2 * self.COL_SIZE, 4.5 * self.ROW_SIZE))
+            self.screen.blit(self.font.render("{}".format(temp_orange_tower.cost), True, (0, 0, 0)),(2 * self.COL_SIZE, 5.5 * self.ROW_SIZE))
+
+            for line in self.arr:
+                for tile in line:
+                    if tile.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and not self.upgrade_overlay.get_rect().collidepoint(pygame.mouse.get_pos()):
+                        self.inventory_open = False
 
     def draw_upgrade_overlay(self):
 
         if self.upgrades_open:
-            self.screen.blit(self.upgrade_overlay, (0, self.header_size))
-            self.screen.blit(self.font.render("Upgrades", True, (0,0,0)), (1 * self.COL_SIZE, self.header_size))
 
             self.draw_tower_radius(self.tower_to_upgrade)
+
+            self.screen.blit(self.upgrade_overlay, (0, self.header_size))
+            self.screen.blit(self.font.render("Upgrades", True, (0, 0, 0)), (1 * self.COL_SIZE, self.header_size))
 
             upgrade_one_cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"]
             upgrade_one_text = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["text"]
@@ -465,10 +554,17 @@ class GAME:
                 bullet.my_x += math.cos(ang) * bullet.velocity * self.delta_time
                 bullet.my_y += math.sin(ang) * bullet.velocity * self.delta_time
 
-                bullet.distance -= bullet.velocity/2
+                x_d = tower.x * self.COL_SIZE + self.COL_SIZE * 0.5 - bullet.my_x * self.COL_SIZE
+                y_d = tower.y * self.ROW_SIZE + self.ROW_SIZE * 0.5  - bullet.my_y * self.ROW_SIZE
+                bullet.distance = math.sqrt(math.pow(x_d, 2) + math.pow(y_d, 2))
 
-                if bullet.distance <= 0:
-                    tower.bullet_list.remove(bullet)
+                for line in self.arr:
+                    for tile in line:
+                        if tile.field_type == -1 and tile.rect.colliderect(bullet.bullet_rect):
+                            if bullet in tower.bullet_list: tower.bullet_list.remove(bullet)
+
+                if bullet.distance >= tower.radius:
+                    if bullet in tower.bullet_list: tower.bullet_list.remove(bullet)
 
     def draw_header(self):
 
@@ -496,17 +592,17 @@ class GAME:
 
     def move_towers(self):
 
-        if self.cost_dict["circle"] <= self.player_money and self.inventory_open:
+        if self.cost_dict["circle"] <= self.player_money and self.inventory_open and self.tower_counter < 1:
             self.move_pink_tower = self.check_clicked_tower(self.pink_tower, self.move_pink_tower)
-            self.click_and_drag_tower(self.move_pink_tower, self.pink_color, "circle")
+        self.click_and_drag_tower(self.move_pink_tower, self.pink_color, "circle")
 
-        if self.cost_dict["basic"] <= self.player_money and self.inventory_open:
+        if self.cost_dict["basic"] <= self.player_money and self.inventory_open and self.tower_counter < 1:
             self.move_gray_tower = self.check_clicked_tower(self.gray_tower, self.move_gray_tower)
-            self.click_and_drag_tower(self.move_gray_tower, self.gray_color, "basic")
+        self.click_and_drag_tower(self.move_gray_tower, self.gray_color, "basic")
 
-        if self.cost_dict["arc"] <= self.player_money and self.inventory_open:
+        if self.cost_dict["arc"] <= self.player_money and self.inventory_open and self.tower_counter < 1:
             self.move_orange_tower = self.check_clicked_tower(self.orange_tower, self.move_orange_tower)
-            self.click_and_drag_tower(self.move_orange_tower, self.orange_color, "arc")
+        self.click_and_drag_tower(self.move_orange_tower, self.orange_color, "arc")
 
         if not self.mouse_clicked or self.right_mouse_clicked:
             self.reset_moving_tower()
@@ -530,6 +626,9 @@ class GAME:
                     self.draw_tower_radius(CircleTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
                 case "arc":
                     self.draw_tower_radius(ArcTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+
+            if tower_rect.colliderect(self.tower_overlay.get_rect()) and not self.mouse_clicked and self.tower_counter > 0:
+                self.reset_moving_tower()
 
             for tower_point in self.tower_point_list:
                 if tower_rect.colliderect((tower_point["x"] * self.COL_SIZE, tower_point["y"] * self.ROW_SIZE+self.header_size, self.COL_SIZE,self.ROW_SIZE)) and not self.mouse_clicked and self.tower_counter > 0:
@@ -625,9 +724,9 @@ class GAME:
 
         self.screen.blit(circle_surface, ((tower.x * self.COL_SIZE + (self.COL_SIZE * 0.5) - tower.radius),
                                           (tower.y * self.ROW_SIZE + (self.ROW_SIZE * 0.5) - tower.radius) + self.header_size))
+    # </editor-fold>
 
-    #buttons
-
+    # <editor-fold desc="buttons">
     def overlay_button(self):
         if not self.inventory_open:
             self.inventory_open = True
@@ -648,11 +747,18 @@ class GAME:
         self.game_running = True
 
     def exit_game_button(self):
+        self.main_menu = False
+        self.game_running = False
         self.pause_menu = False
         self.running = False
+        self.map_picker = False
 
     def skip_button(self):
         self.wave_timer.second_counter = 0
+
+    def play_game(self ):
+        self.main_menu = False
+        self.map_picker = True
 
     def sell_tower_button(self):
         for tower in self.tower_list:
@@ -665,6 +771,28 @@ class GAME:
 
         self.tower_to_upgrade = None
         self.upgrades_open = False
+
+    def back_to_main_menu(self):
+        self.map_picker = False
+        self.main_menu = True
+
+    def select_map(self, map_num):
+        self.map_selection = map_num
+
+    def select_and_play_map(self):
+        if self.map_selection is not None:
+            self.arr = read_map(self.map_dict[str(self.map_selection)]["file"])
+            for i in range(len(self.arr) * len(self.arr[0])):
+                for line in self.arr:
+                    for tile in line:
+                        if tile.field_type == (i+1):
+                            self.path.append(tile)
+
+            self.start_point, self.end_point = self.get_start_and_endpoint()
+            self.END = int(len(self.path))
+            self.map_picker = False
+            self.game_running = True
+    # </editor-fold>
 
 
 pygame.init()
