@@ -30,6 +30,8 @@ class BUTTON:
             text_rect = centered_text.get_rect(center=(self.width/2 + self.start_x, self.height/2 + self.start_y))
             screen.blit(centered_text, text_rect)
 
+
+
         return rect
 
     def check_collision(self, mouse_pos, mouse_click):
