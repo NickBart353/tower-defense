@@ -21,7 +21,7 @@ class TIMER:
 
             pygame.display.update()
             self.second_counter -=  1
-        if self.second_counter == 0:
+        if self.second_counter <= 0:
             self.second_counter = self.seconds
             self.played_wave_timer = True
             self.last_updated_wave_timer = -1
