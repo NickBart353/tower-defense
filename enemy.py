@@ -1,27 +1,82 @@
 import pygame
 class ENEMY:
-    def __init__(self, health, damage, i_came_from = None, x = 0, y = 0):
+    def __init__(self, enemy_type, x = 0, y = 0):
         self.x = x
         self.y = y
-        self.health = health
-        self.current_health = health
-        self.i_came_from = i_came_from
         self.enemy_rect = pygame.Rect(0,0,0,0)
-        self.damage = damage
-        self.movement_interval = 200
         self.last_time_moved = 0
         self.last_hit_by = None
 
-def get_enemy_list(wave_number):
-    enemies = []
-    match wave_number:
-        case 0:
-            for i in range(10):
-                enemies.append(ENEMY(2, 5))
-        case 1:
-            for i in range(10):
-                enemies.append(ENEMY(5, 5))
-        case 2:
-            for i in range(20):
-                enemies.append(ENEMY(5, 5))
-    return enemies
+        match enemy_type:
+            case 1:
+                self.health = 1
+                self.damage = 1
+                self.movement_speed = 2
+                self.color = (200,30,30)
+                self.kill_reward = 2
+            case 2:
+                self.health = 2
+                self.damage = 3
+                self.movement_speed = 2
+                self.color = (30, 30, 200)
+                self.kill_reward = 5
+        self.current_health = self.health
+
+def enemy_list_data():
+    return {
+        "0":{
+            "0":{
+                "ENEMY_TYPE":1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 10,
+            }
+
+        },
+        "1":{
+            "0":{
+                "ENEMY_TYPE":1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "2": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+    }
+
+
+def generate_list_from_data(wave_num):
+    wave_list = []
+    enemy_data = enemy_list_data()
+    for wave_num_key, enemy_list in enemy_data.items():
+        if str(wave_num) == wave_num_key:
+            for enemy_batch_num, enemy_obj in enemy_list.items():
+                temp_enemy_list = []
+                for i in range(0, enemy_obj["AMOUNT"]):
+
+                    temp_enemy_list.append(ENEMY(int(enemy_obj["ENEMY_TYPE"]),0,0,))
+                wave_list.append(temp_enemy_list)
+            break
+
+    return wave_list
