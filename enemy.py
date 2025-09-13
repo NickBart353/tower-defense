@@ -63,8 +63,259 @@ def enemy_list_data():
                 "AMOUNT": 5,
             },
         },
+        "3": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "4": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "5": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "6": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "7": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "8": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "9": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "10": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "11": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "12": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "13": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "14": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "15": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "16": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "17": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "18": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "19": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
+        "20": {
+            "0": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 10,
+            },
+            "1": {
+                "ENEMY_TYPE": 2,
+                "AMOUNT": 20,
+            },
+            "2": {
+                "ENEMY_TYPE": 1,
+                "AMOUNT": 5,
+            },
+        },
     }
-
 
 def generate_list_from_data(wave_num):
     wave_list = []

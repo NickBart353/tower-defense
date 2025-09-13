@@ -5,7 +5,7 @@ from upgrade import *
 from bullet import *
 
 class TOWER:
-    def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color):
+    def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color, rect = None):
         self.x = x
         self.y = y
         self.tower_type = tower_type
@@ -13,7 +13,10 @@ class TOWER:
         self.last_fired = -1
         self.circle_counter = 0
         self.color = color
-        self.rect = pygame.Rect(0,0,0,0)
+        if rect is None:
+            self.rect = pygame.Rect(0,0,0,0)
+        else:
+            self.rect = rect
         self.upgrade_one_counter = 0
         self.upgrade_two_counter = 0
         self.upgrade_three_counter = 0

@@ -16,8 +16,8 @@ class GAME:
     def __init__(self):
         #important stuff
         self.right_mouse_clicked = False
-        self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
-        #self.screen = pygame.display.set_mode((1400,700))
+        #self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode((1400,700))
         self.clock = pygame.time.Clock()
         self.delta_time = 0
 
@@ -119,7 +119,7 @@ class GAME:
         #tower
         self.tower_list = []
         self.tower_counter = 0
-        self.tower_point_list = self.get_tower_points()
+        self.tower_point_list = None
         self.cost_dict = {"basic": get_tower_cost("basic"),
                           "circle": get_tower_cost("circle"),
                           "arc": get_tower_cost("arc"),}
@@ -130,6 +130,7 @@ class GAME:
         self.gray_color = (150, 150, 150)
         self.orange_color = (250, 170, 30)
         self.tower_overlay_button_color = (196, 173, 135)
+        self.tower_drag_radius_color = (50, 50, 50, 50)
 
         #player
         self.player_max_health = 100
@@ -197,8 +198,6 @@ class GAME:
 
             self.check_bullet_enemy_collision()
 
-            self.draw_player_health_bar()
-
             self.check_player_health()
 
             self.draw_tower_overlay()
@@ -208,6 +207,8 @@ class GAME:
             self.draw_upgrade_overlay()
 
             self.draw_header()
+
+            self.draw_player_health_bar()
 
             if not self.wave_timer.played_wave_timer:
                 self.wave_timer.count_down_text(self.screen)
@@ -451,7 +452,7 @@ class GAME:
 
         if self.upgrades_open:
 
-            self.draw_tower_radius(self.tower_to_upgrade)
+            self.draw_tower_radius(self.tower_to_upgrade, self.tower_drag_radius_color)
 
             self.screen.blit(self.upgrade_overlay, (0, self.header_size))
             self.screen.blit(self.font.render("Upgrades", True, (0, 0, 0)), (1 * self.COL_SIZE, self.header_size))
@@ -621,31 +622,43 @@ class GAME:
             y = y / self.ROW_SIZE - 1.5
             match tower_type:
                 case "basic":
-                    self.draw_tower_radius(BasicTower(x , y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                    self.draw_tower_radius(BasicTower(x , y, tower_type, self.COL_SIZE, self.ROW_SIZE, color), self.tower_drag_radius_color)
                 case "circle":
-                    self.draw_tower_radius(CircleTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                    self.draw_tower_radius(CircleTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color), self.tower_drag_radius_color)
                 case "arc":
-                    self.draw_tower_radius(ArcTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                    self.draw_tower_radius(ArcTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color), self.tower_drag_radius_color)
 
-            if tower_rect.colliderect(self.tower_overlay.get_rect()) and not self.mouse_clicked and self.tower_counter > 0:
+            if tower_rect.colliderect(self.tower_overlay.get_rect()) and not self.mouse_clicked and self.tower_counter > 0 and self.inventory_open:
                 self.reset_moving_tower()
+            can_place_tower = True
+            for line in self.arr:
+                for tile in line:
+                    if self.tower_list:
+                        for tower in self.tower_list:
+                            if (not tile.field_type == 0 and tower_rect.colliderect(tile.rect)) or tower_rect.colliderect(tower.rect):
+                                can_place_tower = False
+                                self.tower_drag_radius_color = (250, 20, 20, 50)
+                            elif tile.field_type == 0 and tower_rect.colliderect(tile.rect):
+                                self.tower_drag_radius_color = (50, 50, 50, 50)
+                    if not tile.field_type == 0 and tower_rect.colliderect(tile.rect):
+                        self.tower_drag_radius_color = (250, 20, 20, 50)
+                        can_place_tower = False
+                    elif tile.field_type == 0 and tower_rect.colliderect(tile.rect):
+                        self.tower_drag_radius_color = (50, 50, 50, 50)
 
-            for tower_point in self.tower_point_list:
-                if tower_rect.colliderect((tower_point["x"] * self.COL_SIZE, tower_point["y"] * self.ROW_SIZE+self.header_size, self.COL_SIZE,self.ROW_SIZE)) and not self.mouse_clicked and self.tower_counter > 0:
-                    if not tower_point["has_tower"]:
-                        match tower_type:
-                            case "basic":
-                                self.tower_list.append(BasicTower(tower_point["x"], tower_point["y"],tower_type, self.COL_SIZE, self.ROW_SIZE, color))
-                            case "circle":
-                                self.tower_list.append(CircleTower(tower_point["x"], tower_point["y"], tower_type, self.COL_SIZE, self.ROW_SIZE, color))
-                            case "arc":
-                                self.tower_list.append(ArcTower(tower_point["x"], tower_point["y"], tower_type, self.COL_SIZE, self.ROW_SIZE, color))
-
-                        self.player_money -= self.cost_dict[tower_type]
-                        self.tower_counter -= 1
-                        tower_point["has_tower"] = True
-                    else:
-                        self.reset_moving_tower()
+            if can_place_tower and not self.mouse_clicked and self.tower_counter > 0:
+                match tower_type:
+                    case "basic":
+                        self.tower_list.append(
+                            BasicTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                    case "circle":
+                        self.tower_list.append(
+                            CircleTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                    case "arc":
+                        self.tower_list.append(
+                            ArcTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                self.player_money -= self.cost_dict[tower_type]
+                self.tower_counter -= 1
 
     def reset_moving_tower(self):
         self.move_pink_tower = False
@@ -718,9 +731,9 @@ class GAME:
             self.tower_to_upgrade.upgrade_three()
             self.player_money -= cost
 
-    def draw_tower_radius(self, tower):
+    def draw_tower_radius(self, tower, radius_color):
         circle_surface = pygame.Surface((tower.radius * 2, tower.radius * 2),pygame.SRCALPHA)
-        pygame.draw.circle(circle_surface, (50, 50, 50, 50),(tower.radius, tower.radius), tower.radius)
+        pygame.draw.circle(circle_surface, radius_color,(tower.radius, tower.radius), tower.radius)
 
         self.screen.blit(circle_surface, ((tower.x * self.COL_SIZE + (self.COL_SIZE * 0.5) - tower.radius),
                                           (tower.y * self.ROW_SIZE + (self.ROW_SIZE * 0.5) - tower.radius) + self.header_size))
@@ -728,11 +741,14 @@ class GAME:
 
     # <editor-fold desc="buttons">
     def overlay_button(self):
-        if not self.inventory_open:
+        if not self.inventory_open and not self.upgrades_open:
             self.inventory_open = True
             self.upgrades_open = False
-        elif self.inventory_open:
+        elif self.inventory_open and not self.upgrades_open:
             self.inventory_open = False
+            self.upgrades_open = False
+        elif self.upgrades_open:
+            self.upgrades_open = False
 
     def pause_button(self):
         if self.pause_menu:
@@ -788,6 +804,7 @@ class GAME:
                         if tile.field_type == (i+1):
                             self.path.append(tile)
 
+            self.tower_point_list = self.get_tower_points()
             self.start_point, self.end_point = self.get_start_and_endpoint()
             self.END = int(len(self.path))
             self.map_picker = False
