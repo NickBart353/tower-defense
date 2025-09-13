@@ -365,6 +365,8 @@ class GAME:
             self.screen.blit(self.upgrade_overlay, (0, self.header_size))
             self.screen.blit(self.font.render("Upgrades", True, (0,0,0)), (1 * self.COL_SIZE, self.header_size))
 
+            self.draw_tower_radius(self.tower_to_upgrade)
+
             upgrade_one_cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"]
             upgrade_one_text = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["text"]
 
@@ -449,6 +451,10 @@ class GAME:
                 self.inventory_open = False
                 self.tower_to_upgrade = tower
                 self.mouse_clicked_once = False
+        for line in self.arr:
+            for tile in line:
+                if tile.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and not self.upgrade_overlay.get_rect().collidepoint(pygame.mouse.get_pos()):
+                    self.upgrades_open = False
 
     def draw_bullets(self):
         for tower in self.tower_list:
@@ -514,6 +520,17 @@ class GAME:
     def click_and_drag_tower(self, moving_bool, color, tower_type):
         if moving_bool:
             tower_rect = pygame.draw.circle(self.screen, color, pygame.mouse.get_pos(),self.COL_SIZE // 2)
+            x, y = pygame.mouse.get_pos()
+            x = x / self.COL_SIZE - 0.5
+            y = y / self.ROW_SIZE - 1.5
+            match tower_type:
+                case "basic":
+                    self.draw_tower_radius(BasicTower(x , y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                case "circle":
+                    self.draw_tower_radius(CircleTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                case "arc":
+                    self.draw_tower_radius(ArcTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+
             for tower_point in self.tower_point_list:
                 if tower_rect.colliderect((tower_point["x"] * self.COL_SIZE, tower_point["y"] * self.ROW_SIZE+self.header_size, self.COL_SIZE,self.ROW_SIZE)) and not self.mouse_clicked and self.tower_counter > 0:
                     if not tower_point["has_tower"]:
@@ -540,7 +557,10 @@ class GAME:
     def towers_fire(self):
         for tower in self.tower_list:
             for enemy in self.enemy_list:
-                if tower.radius_rect_circle.colliderect(enemy.enemy_rect):
+                x_d = tower.x * self.COL_SIZE - enemy.x * self.COL_SIZE
+                y_d = tower.y * self.ROW_SIZE - enemy.y * self.ROW_SIZE
+                distance = math.sqrt(math.pow(x_d,2) + math.pow(y_d,2))
+                if distance < tower.radius:
                     tower.fire(enemy)
 
     def check_bullet_enemy_collision(self):
@@ -598,6 +618,13 @@ class GAME:
         if cost <= self.player_money and self.upgrades_open and not self.tower_to_upgrade.upgrade_three_maxed and self.tower_to_upgrade.can_upgrade_three:
             self.tower_to_upgrade.upgrade_three()
             self.player_money -= cost
+
+    def draw_tower_radius(self, tower):
+        circle_surface = pygame.Surface((tower.radius * 2, tower.radius * 2),pygame.SRCALPHA)
+        pygame.draw.circle(circle_surface, (50, 50, 50, 50),(tower.radius, tower.radius), tower.radius)
+
+        self.screen.blit(circle_surface, ((tower.x * self.COL_SIZE + (self.COL_SIZE * 0.5) - tower.radius),
+                                          (tower.y * self.ROW_SIZE + (self.ROW_SIZE * 0.5) - tower.radius) + self.header_size))
 
     #buttons
 

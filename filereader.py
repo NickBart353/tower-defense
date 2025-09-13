@@ -5,7 +5,7 @@ from tile import TILE
 def read_map():
     map_array = []
     temp_array = []
-    with open("maps/map2.csv","r") as file:
+    with open("maps/desert.csv", "r") as file:
         reader = csv.reader(file)
         for i, line in enumerate(reader):
             for j, tile in enumerate(line):

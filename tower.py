@@ -51,7 +51,7 @@ class TOWER:
 class BasicTower(TOWER):
     def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color):
         super().__init__(x, y, tower_type, COL_SIZE, ROW_SIZE, color)
-        self.radius = 500  # 500 pixels
+        self.radius = 250  # 500 pixels
         self.radius_rect_circle = pygame.Rect((self.x * COL_SIZE) - self.radius / 2,
                                               self.y * ROW_SIZE - self.radius / 2, self.radius, self.radius)
         self.damage = 1  # 1 damage
@@ -126,7 +126,7 @@ class BasicTower(TOWER):
 class CircleTower(TOWER):
     def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color):
         super().__init__(x, y, tower_type, COL_SIZE, ROW_SIZE, color)
-        self.radius = 500  # 500 pixels
+        self.radius = 250  # 500 pixels
         self.radius_rect_circle = pygame.Rect((self.x * COL_SIZE) - self.radius / 2,
                                               self.y * ROW_SIZE - self.radius / 2, self.radius, self.radius)
         self.damage = 1  # 1 damage
@@ -223,7 +223,7 @@ class CircleTower(TOWER):
 class ArcTower(TOWER):
     def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color):
         super().__init__(x, y, tower_type, COL_SIZE, ROW_SIZE, color)
-        self.radius = 50000  # 500 pixels
+        self.radius = 500  # 500 pixels
         self.radius_rect_circle = pygame.Rect((self.x * COL_SIZE) - self.radius / 2,
                                               self.y * ROW_SIZE - self.radius / 2, self.radius, self.radius)
         self.damage = 1  # 1 damage
