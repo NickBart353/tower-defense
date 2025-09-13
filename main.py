@@ -9,6 +9,7 @@ from wave import *
 from button import BUTTON
 from timed_text import TIMER
 from upgrade import *
+from tile import *
 
 class GAME:
     def __init__(self):
@@ -40,7 +41,17 @@ class GAME:
         self.arr = read_map()
         self.COL, self.ROW = len(self.arr[0]), len(self.arr)
         self.COL_SIZE, self.ROW_SIZE = self.screen.get_width()/self.COL, (self.screen.get_height()) / (self.ROW+1)
+
+        self.path = []
+        temp_status = 0
+        for i in range(len(self.arr) * len(self.arr[0])):
+            for line in self.arr:
+                for tile in line:
+                    if tile.field_type == (i+1):
+                        self.path.append(tile)
+
         self.start_point, self.end_point = self.get_start_and_endpoint()
+        self.END = int(len(self.path))
 
         #ui
         self.sidebar_size = self.COL_SIZE*6
@@ -96,6 +107,10 @@ class GAME:
                                          lambda: self.buy_upgrade_three(),
                                          color_default=self.upgrade_three_color, color_hover=self.upgrade_three_color_hover)
 
+        self.sell_tower_btn = BUTTON(self.COL_SIZE * 1, self.ROW_SIZE * 12 + self.header_size + 1, self.COL_SIZE * 2, self.ROW_SIZE * 1,
+                                        lambda: self.sell_tower_button(),
+                                        (225,0,0), (255,0,0), text = "Sell", text_color=(255,255,255), font=self.font)
+
         #enemy and wave
         self.wave_list = init_waves()
         self.wave_counter = 0
@@ -125,18 +140,18 @@ class GAME:
         self.highscore = 0
 
         #upgrade data
-        self.tower_upgrade_data = get_basic_upgrade_data()
+        self.tower_upgrade_data = get_upgrade_data()
 
     def get_start_and_endpoint(self):
         start_point, end_point = {"x": 0, "y": 0}, {"x": 0, "y": 0}
-
+        end = int(len(self.path))
         for line in self.arr:
             for tile in line:
                 match tile.field_type:
-                    case 2:
+                    case 1:
                         start_point["x"] = tile.x
                         start_point["y"] = tile.y
-                    case 3:
+                    case end:
                         end_point["x"] = tile.x
                         end_point["y"] = tile.y
         return start_point, end_point
@@ -187,6 +202,8 @@ class GAME:
             self.draw_upgrade_overlay()
 
             self.move_towers()
+
+            self.check_player_health()
 
             if not self.wave_timer.played_wave_timer:
                 self.wave_timer.count_down_text(self.screen)
@@ -248,17 +265,17 @@ class GAME:
                     self.right_mouse_clicked = False
 
     def spawn_enemy_from_wave(self):
-        if len(self.wave_list[self.wave_counter].enemy_list) > 0:
-            enemy = self.wave_list[self.wave_counter].spawn_enemy(self.start_point)
-            if enemy:
-                self.enemy_list.append(enemy)
-                self.enemies_spawned += 1
+        enemy = self.wave_list[self.wave_counter].spawn_enemy(self.start_point)
+        if enemy:
+            enemy.on_tile = 1
+            self.enemy_list.append(enemy)
+            self.enemies_spawned += 1
 
     def update_wave(self):
         if len(self.enemy_list) <= 0 and len(self.wave_list[self.wave_counter].enemy_list) <= 0:
+            self.player_money += self.wave_list[self.wave_counter].money_reward
             self.wave_counter += 1
             self.wave_timer.played_wave_timer = False
-            self.player_money += self.wave_list[self.wave_counter].money_reward
 
     def draw_main_playing_field(self):
         self.screen.fill((0, 0, 0))
@@ -267,50 +284,60 @@ class GAME:
             for tile in line:
                 match tile.field_type:
                     case 0:
-                        pygame.draw.rect(self.screen, (0,120,30),
-                                         (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
+                        tile.rect = pygame.draw.rect(self.screen, (0,120,30),
+                                                     (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
                     case 1:
-                        pygame.draw.rect(self.screen, (115, 72, 23),
+                        tile.rect = pygame.draw.rect(self.screen, (0,0,200),
                                          (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
-                    case 2:
-                        pygame.draw.rect(self.screen, (0,0,200),
+                    case self.END:
+                        tile.rect = pygame.draw.rect(self.screen, (250, 250, 0),
                                          (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
-                    case 3:
-                        pygame.draw.rect(self.screen, (250, 250, 0),
-                                         (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE)+self.header_size, self.COL_SIZE, self.ROW_SIZE))
+                    case _:
+                        tile.rect = pygame.draw.rect(self.screen, (115, 72, 23),
+                                                 (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE) + self.header_size,
+                                                  self.COL_SIZE, self.ROW_SIZE))
 
     def draw_enemies(self):
-        now = pygame.time.get_ticks()
         for enemy in self.enemy_list:
-            enemy.enemy_rect = pygame.draw.circle(self.screen, (0, 0, 0), (enemy.x * self.COL_SIZE + self.COL_SIZE * 0.5,
+            enemy.enemy_rect = pygame.draw.circle(self.screen, enemy.color, (enemy.x * self.COL_SIZE + self.COL_SIZE * 0.5,
                                                         (enemy.y * self.ROW_SIZE + self.ROW_SIZE * 0.5)+self.header_size), self.COL_SIZE // 2)
+
             pygame.draw.rect(self.screen, (0,0,0), ((enemy.x * self.COL_SIZE)-1, (((enemy.y+0.8) * self.ROW_SIZE)-1)+self.header_size, self.COL_SIZE+2, 12))
             pygame.draw.rect(self.screen, (255,0,0),((enemy.x * self.COL_SIZE), (enemy.y + 0.8) * self.ROW_SIZE+self.header_size, self.COL_SIZE,10))
             pygame.draw.rect(self.screen, (0,255,0),((enemy.x * self.COL_SIZE), ((enemy.y + 0.8) * self.ROW_SIZE)+self.header_size, self.COL_SIZE/enemy.health*enemy.current_health,10))
 
-            if enemy.x == self.end_point["x"] and enemy.y == self.end_point["y"]:
-                self.player_health -= enemy.damage
-                self.enemy_list.remove(enemy)
+            ang = math.atan2(self.path[enemy.on_tile].y - self.path[enemy.on_tile-1].y, self.path[enemy.on_tile].x - self.path[enemy.on_tile-1].x)
+            enemy.x += math.cos(ang) * enemy.movement_speed * self.delta_time
+            enemy.y += math.sin(ang) * enemy.movement_speed * self.delta_time
 
-            if now > enemy.movement_interval + enemy.last_time_moved:
-                enemy.last_time_moved = now
+            temp_x = self.path[enemy.on_tile].x - self.path[enemy.on_tile - 1].x
+            temp_y = self.path[enemy.on_tile].y - self.path[enemy.on_tile - 1].y
 
-                if self.arr[enemy.y][enemy.x + 1].can_collide_with and not enemy.i_came_from == "r":
-                    enemy.x += 1
-                    enemy.i_came_from = "l"
-                    continue
-                if self.arr[enemy.y][enemy.x - 1].can_collide_with and not enemy.i_came_from == "l":
-                    enemy.x -= 1
-                    enemy.i_came_from = "r"
-                    continue
-                if self.arr[enemy.y + 1][enemy.x].can_collide_with and not enemy.i_came_from == "d":
-                    enemy.y += 1
-                    enemy.i_came_from = "u"
-                    continue
-                if self.arr[enemy.y - 1][enemy.x].can_collide_with and not enemy.i_came_from == "u":
-                    enemy.y -= 1
-                    enemy.i_came_from = "d"
-                    continue
+            temp_x_bool = False
+            temp_y_bool = False
+
+            if temp_x < 0:
+                if self.path[enemy.on_tile].x >= enemy.x:
+                    temp_x_bool = True
+            elif temp_x > 0:
+                if self.path[enemy.on_tile].x <= enemy.x:
+                    temp_x_bool = True
+            elif temp_x == 0:
+                temp_x_bool = True
+            if temp_y < 0:
+                if self.path[enemy.on_tile].y >= enemy.y:
+                    temp_y_bool = True
+            elif temp_y > 0:
+                if self.path[enemy.on_tile].y <= enemy.y:
+                    temp_y_bool = True
+            elif temp_y == 0:
+                temp_y_bool = True
+
+            if temp_x_bool and temp_y_bool:
+                enemy.on_tile += 1
+                if enemy.on_tile == len(self.path):
+                    self.player_health -= enemy.damage
+                    self.enemy_list.remove(enemy)
 
     def draw_towers(self):
         for tower in self.tower_list:
@@ -347,32 +374,29 @@ class GAME:
             upgrade_three_cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"]["{}".format(self.tower_to_upgrade.upgrade_three_counter)]["cost"]
             upgrade_three_text = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["3"]["{}".format(self.tower_to_upgrade.upgrade_three_counter)]["text"]
 
-            self.upgrade_one_color = (23, 48, 138)
-            self.upgrade_one_color_hover = (23, 48, 168)
+            hendrick_das_ding_ist_dirty_af = 3 if self.tower_to_upgrade.upgrade_one_maxed else self.tower_to_upgrade.upgrade_one_counter
+            for i in range(0, hendrick_das_ding_ist_dirty_af):
+                pygame.draw.rect(self.screen, (0,255,0),(self.COL_SIZE * 2 + (i + 1) * 20, self.ROW_SIZE * 4 + self.header_size, 10, 10))
 
-            self.upgrade_two_color = (23, 138, 48)
-            self.upgrade_two_color_hover = (23, 168, 48)
+            hendrick_das_ding_ist_dirty_af_two = 3 if self.tower_to_upgrade.upgrade_two_maxed else self.tower_to_upgrade.upgrade_two_counter
+            for i in range(0, hendrick_das_ding_ist_dirty_af_two):
+                pygame.draw.rect(self.screen, (0, 255, 0),(self.COL_SIZE * 2 + (i + 1) * 20, self.ROW_SIZE * 6 + self.header_size, 10, 10))
 
-            self.upgrade_three_color = (138, 48, 23)
-            self.upgrade_three_color_hover = (168, 48, 23)
+            hendrick_das_ding_ist_dirty_af_three = 3 if self.tower_to_upgrade.upgrade_three_maxed else self.tower_to_upgrade.upgrade_three_counter
+            for i in range(0, hendrick_das_ding_ist_dirty_af_three):
+                pygame.draw.rect(self.screen, (0, 255, 0),(self.COL_SIZE * 2 + (i + 1) * 20, self.ROW_SIZE * 8 + self.header_size, 10, 10))
 
             if self.tower_to_upgrade.upgrade_one_maxed:
                 upgrade_one_cost = "-"
                 upgrade_one_text = "Max"
-                self.upgrade_one_color = (100, 100, 100)
-                self.upgrade_one_color_hover = (100, 100, 100)
 
             if self.tower_to_upgrade.upgrade_two_maxed:
                 upgrade_two_cost = "-"
                 upgrade_two_text = "Max"
-                self.upgrade_two_color = (100, 100, 100)
-                self.upgrade_two_color_hover = (100, 100, 100)
 
             if self.tower_to_upgrade.upgrade_three_maxed:
                 upgrade_three_cost = "-"
                 upgrade_three_text = "Max"
-                self.upgrade_three_color = (100, 100, 100)
-                self.upgrade_three_color_hover = (100, 100, 100)
 
             if self.tower_to_upgrade.upgrade_one_counter >= 1 and self.tower_to_upgrade.upgrade_two_counter >= 1:
                 upgrade_three_cost = "-"
@@ -409,6 +433,10 @@ class GAME:
             self.display_single_upgrade(self.upgrade_button_two, upgrade_two_cost, upgrade_two_text)
             self.display_single_upgrade(self.upgrade_button_three, upgrade_three_cost, upgrade_three_text)
 
+            self.screen.blit(self.font.render("Value: {}".format(self.tower_to_upgrade.value),True,(0,0,0)), (self.COL_SIZE, self.ROW_SIZE * 13 + self.header_size))
+            self.sell_tower_btn.draw_from_color(self.screen)
+            self.sell_tower_btn.check_collision(pygame.mouse.get_pos(), self.mouse_clicked)
+
         if self.tower_to_upgrade is not None:
             if self.tower_to_upgrade.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and self.upgrades_open:
                 self.upgrades_open = False
@@ -416,7 +444,7 @@ class GAME:
                 self.mouse_clicked_once = False
 
         for tower in self.tower_list:
-            if tower.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once and not self.upgrades_open:
+            if tower.rect.collidepoint(pygame.mouse.get_pos()) and self.mouse_clicked_once:
                 self.upgrades_open = True
                 self.inventory_open = False
                 self.tower_to_upgrade = tower
@@ -527,7 +555,14 @@ class GAME:
                             if bullet.pierce <= 0:
                                 if bullet in tower.bullet_list: tower.bullet_list.remove(bullet)
                     if enemy.current_health <= 0:
-                        if enemy in self.enemy_list: self.enemy_list.remove(enemy)
+                        if enemy in self.enemy_list:
+                            self.player_money += enemy.kill_reward
+                            self.enemy_list.remove(enemy)
+
+    def check_player_health(self):
+        if self.player_health <= 0:
+            self.game_running = False
+            self.running = False
 
     def display_single_upgrade(self, button, cost, text):
         upgrade_rect = button.draw_from_color(self.screen)
@@ -591,6 +626,18 @@ class GAME:
 
     def skip_button(self):
         self.wave_timer.second_counter = 0
+
+    def sell_tower_button(self):
+        for tower in self.tower_list:
+            if tower == self.tower_to_upgrade:
+                self.player_money += tower.value
+                self.tower_list.remove(tower)
+        for tower_point in self.tower_point_list:
+            if tower_point["x"] == self.tower_to_upgrade.x and tower_point["y"] == self.tower_to_upgrade.y:
+                tower_point["has_tower"] = False
+
+        self.tower_to_upgrade = None
+        self.upgrades_open = False
 
 
 pygame.init()
