@@ -5,7 +5,7 @@ from filereader import read_map, get_map_data
 from enemy import ENEMY
 from tower import TOWER, BasicTower, CircleTower, ArcTower, get_tower_cost
 from bullet import BULLET
-from wave import init_waves
+from wave import init_waves, WAVE
 from button import BUTTON
 from timed_text import TIMER
 from upgrade import get_upgrade_data
@@ -33,6 +33,7 @@ class GAME:
         self.pause_menu = False
         self.main_menu = True
         self.map_picker = False
+        self.game_over = False
 
         self.inventory_open = False
         self.upgrades_open = False
@@ -63,10 +64,15 @@ class GAME:
         self.header_size = self.ROW_SIZE
 
         #fonts
-        self.font = pygame.font.Font("assets/font/Enchanted Land.otf",40)
+        #self.font = pygame.font.Font("assets/font/Enchanted Land.otf",40)
+        self.large_button_font = pygame.font.Font("assets/font/Pixeled.ttf", 25)
+        self.small_button_font = pygame.font.Font("assets/font/Pixeled.ttf", 17)
+        self.map_picker_font = pygame.font.Font("assets/font/Pixeled.ttf", 23)
+        self.tower_menu_font = pygame.font.Font("assets/font/Pixeled.ttf", 10)
+        self.header_font = pygame.font.Font("assets/font/Pixeled.ttf", 15)
 
         #animations
-        self.wave_timer = TIMER(self.font, (0,0,0), 15, self.screen.get_width()/4*3, 5)
+        self.wave_timer = TIMER(self.header_font, (0,0,0), 15, self.screen.get_width()/4*3, 0)
 
         #buttons
         self.tower_overlay_button = BUTTON(1,1,self.COL_SIZE - 2,self.header_size - 2,
@@ -90,26 +96,26 @@ class GAME:
         self.upgrade_three_color = (138, 48, 23)
         self.upgrade_three_color_hover = (168, 48, 23)
 
-        self.upgrade_button_one = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 3 + self.header_size + 1, self.COL_SIZE - 2,
+        self.upgrade_button_one = BUTTON(self.COL_SIZE * 0.5 + 1, self.ROW_SIZE * 3 + self.header_size + 1, self.COL_SIZE * 1.5 - 2,
                                 self.ROW_SIZE - 2,
                                 lambda: self.buy_upgrade_one(),
                                 color_default=self.upgrade_one_color, color_hover=self.upgrade_one_color_hover)
 
-        self.upgrade_button_two = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 5 + self.header_size + 1,
-                                         self.COL_SIZE - 2,
+        self.upgrade_button_two = BUTTON(self.COL_SIZE * 0.5 + 1, self.ROW_SIZE * 5 + self.header_size + 1,
+                                         self.COL_SIZE * 1.5 - 2,
                                          self.ROW_SIZE - 2,
                                          lambda: self.buy_upgrade_two(),
                                          color_default=self.upgrade_two_color, color_hover=self.upgrade_two_color_hover)
 
-        self.upgrade_button_three = BUTTON(self.COL_SIZE * 1 + 1, self.ROW_SIZE * 7 + self.header_size + 1,
-                                         self.COL_SIZE - 2,
+        self.upgrade_button_three = BUTTON(self.COL_SIZE * 0.5 + 1, self.ROW_SIZE * 7 + self.header_size + 1,
+                                         self.COL_SIZE * 1.5 - 2,
                                          self.ROW_SIZE - 2,
                                          lambda: self.buy_upgrade_three(),
                                          color_default=self.upgrade_three_color, color_hover=self.upgrade_three_color_hover)
 
         self.sell_tower_btn = BUTTON(self.COL_SIZE * 1, self.ROW_SIZE * 12 + self.header_size + 1, self.COL_SIZE * 2, self.ROW_SIZE * 1,
                                         lambda: self.sell_tower_button(),
-                                        (225,0,0), (255,0,0), text = "Sell", text_color=(255,255,255), font=self.font)
+                                        (225,0,0), (255,0,0), text = "Sell", text_color=(255,255,255), font=self.small_button_font)
 
         #enemy and wave
         self.wave_list = init_waves()
@@ -132,6 +138,11 @@ class GAME:
         self.orange_color = (250, 170, 30)
         self.tower_overlay_button_color = (196, 173, 135)
         self.tower_drag_radius_color = (50, 50, 50, 50)
+
+        #sounds
+        self.bullet_hit_sound = pygame.mixer.Sound("assets/sounds/game/pop-268648.mp3")
+        self.bullet_hit_sound.set_volume(0.5)
+        self.bullet_sound_channel = None
 
         #player
         self.player_max_health = 100
@@ -178,6 +189,8 @@ class GAME:
                 self.main_menu_loop()
             if self.map_picker:
                 self.map_pick_loop()
+            if self.game_over:
+                self.game_over_loop()
             self.mouse_clicked_once = False
 
     def game_loop(self):
@@ -227,19 +240,19 @@ class GAME:
         menu_rect = pygame.Rect(self.screen.get_width()/2-100,self.screen.get_height()/2-200,200,400)
         continue_button = BUTTON(self.screen.get_width()/2-80, self.screen.get_height()/2-180, 160, 30,
                                  lambda: self.continue_button(),
-                                 color_default = (0,255,0), color_hover = (0,200,0), text = "Continue", font=self.font, text_color=(0,0,0))
+                                 color_default = (0,255,0), color_hover = (0,200,0), text = "Continue", font=self.small_button_font, text_color=(0,0,0))
 
         main_menu_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 130, 160, 30,
                                  lambda: self.main_menu_button(),
-                                 color_default=(150, 150, 150), color_hover=(100, 100, 100), text="Main menu", font=self.font,text_color=(0, 0, 0))
+                                 color_default=(150, 150, 150), color_hover=(100, 100, 100), text="Main menu", font=self.small_button_font,text_color=(0, 0, 0))
 
         exit_game_button = BUTTON(self.screen.get_width()/2-80, self.screen.get_height()/2+150, 160, 30,
                                  lambda: self.exit_game_button(),
-                                 color_default = (255,0,0), color_hover = (200,0,0), text = "Exit", font=self.font, text_color=(0,0,0))
+                                 color_default = (255,0,0), color_hover = (200,0,0), text = "Exit", font=self.small_button_font, text_color=(0,0,0))
 
         while self.pause_menu:
 
-            pygame.draw.rect(self.screen, (255,255,255),menu_rect)
+            pygame.draw.rect(self.screen, (50, 50, 50),menu_rect)
 
             continue_button.draw_from_color(self.screen)
             continue_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
@@ -262,11 +275,11 @@ class GAME:
 
         start_game_button = BUTTON(self.screen.get_width()/2-80, self.screen.get_height()/2-100, 160, 50,
                                    lambda: self.play_game(),
-                                   text = "Play", color_default=(0,225,0), color_hover=(0,255,0), font = self.font, text_color=(0,0,0))
+                                   text = "Play", color_default=(0,225,0), color_hover=(0,255,0), font = self.large_button_font, text_color=(0,0,0))
 
         quit_game_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 , 160, 50,
                                    lambda: self.exit_game_button(),
-                                   text="Quit", color_default=(225, 0, 0), color_hover=(255, 0, 0), font=self.font, text_color=(0,0,0))
+                                   text="Quit", color_default=(225, 0, 0), color_hover=(255, 0, 0), font=self.large_button_font, text_color=(0,0,0))
 
         while self.main_menu:
             self.screen.blit(title_screen_image, (0, 0))
@@ -289,11 +302,11 @@ class GAME:
 
         select_map_button = BUTTON(self.screen.get_width()/2-150, self.screen.get_height() / 1.1, 300, 50,
                                    lambda: self.select_and_play_map(),
-                                   text = "Select   Map", color_default=(0,225,0), color_hover=(0,255,0), font = self.font, text_color=(0,0,0))
+                                   text = "Select   Map", color_default=(0,225,0), color_hover=(0,255,0), font = self.large_button_font, text_color=(0,0,0))
 
         back_button = BUTTON(self.screen.get_width() / 20, self.screen.get_height() / 1.1  , 160, 50,
                                    lambda: self.back_to_main_menu(),
-                                   text="Back", color_default=(225, 0, 0), color_hover=(255, 0, 0), font=self.font, text_color=(0,0,0))
+                                   text="Back", color_default=(225, 0, 0), color_hover=(255, 0, 0), font=self.large_button_font, text_color=(0,0,0))
 
         map_button_list = []
         temp_counter = 0
@@ -306,7 +319,7 @@ class GAME:
         for i, (key, value) in enumerate(self.map_dict.items()):
             map_button_list.append(BUTTON((gap_size * (temp_counter + 1)) + (square_width * temp_counter), self.screen.get_height() / 3, square_width, square_height,
                                           lambda: self.select_map(i),
-                                          img= pygame.image.load(value["preview"]).convert_alpha(), text= value["name"],font=self.font, text_color=(0,0,0)))
+                                          img= pygame.image.load(value["preview"]).convert_alpha(), text= value["name"],font=self.map_picker_font, text_color=(0,0,0)))
             temp_counter += 1
             if temp_counter == 3: temp_counter = 0
 
@@ -331,6 +344,50 @@ class GAME:
             self.mouse_clicked_once = False
             self.get_events()
 
+    def game_over_loop(self):
+        game_over_rect = pygame.Rect(self.screen.get_width() / 2 - 100, self.screen.get_height() / 2 - 200, 200, 400)
+
+        play_again_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 180, 160, 30,
+                                 lambda: self.play_again_button_func(),
+                                 color_default=(0, 255, 0), color_hover=(0, 200, 0), text="Play again",
+                                 font=self.small_button_font, text_color=(0, 0, 0))
+
+        return_to_map_picker_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 130, 160, 30,
+                                   lambda: self.return_to_map_picker_from_game(),
+                                   color_default=(0, 255, 0), color_hover=(0, 200, 0), text="Pick map",
+                                   font=self.small_button_font, text_color=(0, 0, 0))
+
+        main_menu_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 80, 160, 30,
+                                  lambda: self.main_menu_button(),
+                                  color_default=(150, 150, 150), color_hover=(100, 100, 100), text="Main menu",
+                                  font=self.small_button_font, text_color=(0, 0, 0))
+
+        exit_game_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 + 150, 160, 30,
+                                  lambda: self.exit_game_button(),
+                                  color_default=(255, 0, 0), color_hover=(200, 0, 0), text="Exit",
+                                  font=self.small_button_font, text_color=(0, 0, 0))
+
+        while self.game_over:
+            pygame.draw.rect(self.screen, (50, 50, 50), game_over_rect)
+
+            play_again_button.draw_from_color(self.screen)
+            play_again_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            return_to_map_picker_button.draw_from_color(self.screen)
+            return_to_map_picker_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            main_menu_button.draw_from_color(self.screen)
+            main_menu_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            exit_game_button.draw_from_color(self.screen)
+            exit_game_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            pygame.display.update(game_over_rect)
+            self.delta_time = self.clock.tick(60) / 1000
+            self.mouse_clicked_once = False
+
+            self.get_events()
+
     # </editor-fold>
 
     # <editor-fold desc="funcs & more">
@@ -343,6 +400,8 @@ class GAME:
                     self.pause_button()
                 if event.key == pygame.K_TAB:
                     self.overlay_button()
+                if event.key == pygame.K_RETURN:
+                    self.skip_button()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -441,6 +500,7 @@ class GAME:
     def draw_tower_overlay(self):
         if self.inventory_open:
             self.screen.blit(self.tower_overlay, (0, self.header_size))
+            self.screen.blit(self.large_button_font.render("Towers", False, (0, 0, 0)),(1 * self.COL_SIZE, self.header_size))
 
             temp_pink_tower = TOWER(1 * self.COL_SIZE, 4 * self.ROW_SIZE, "circle", self.COL_SIZE, self.ROW_SIZE, self.pink_color)
             temp_gray_tower = TOWER(1 * self.COL_SIZE, 5 * self.ROW_SIZE, "basic", self.COL_SIZE, self.ROW_SIZE, self.gray_color)
@@ -450,9 +510,9 @@ class GAME:
             self.gray_tower = temp_gray_tower.draw(self.screen, self.COL_SIZE // 2)
             self.orange_tower = temp_orange_tower.draw(self.screen, self.COL_SIZE // 2)
 
-            self.screen.blit(self.font.render("{}".format(temp_pink_tower.cost),True,(0,0,0)),(2 * self.COL_SIZE, 3.5 * self.ROW_SIZE))
-            self.screen.blit(self.font.render("{}".format(temp_gray_tower.cost), True, (0, 0, 0)), (2 * self.COL_SIZE, 4.5 * self.ROW_SIZE))
-            self.screen.blit(self.font.render("{}".format(temp_orange_tower.cost), True, (0, 0, 0)),(2 * self.COL_SIZE, 5.5 * self.ROW_SIZE))
+            self.screen.blit(self.tower_menu_font.render("{}$".format(temp_pink_tower.cost),False,(0,0,0)),(2 * self.COL_SIZE, 3.5 * self.ROW_SIZE))
+            self.screen.blit(self.tower_menu_font.render("{}$".format(temp_gray_tower.cost), False, (0, 0, 0)), (2 * self.COL_SIZE, 4.5 * self.ROW_SIZE))
+            self.screen.blit(self.tower_menu_font.render("{}$".format(temp_orange_tower.cost), False, (0, 0, 0)),(2 * self.COL_SIZE, 5.5 * self.ROW_SIZE))
 
             for line in self.arr:
                 for tile in line:
@@ -466,7 +526,7 @@ class GAME:
             self.draw_tower_radius(self.tower_to_upgrade, self.tower_drag_radius_color)
 
             self.screen.blit(self.upgrade_overlay, (0, self.header_size))
-            self.screen.blit(self.font.render("Upgrades", True, (0, 0, 0)), (1 * self.COL_SIZE, self.header_size))
+            self.screen.blit(self.large_button_font.render("Upgrades", False, (0, 0, 0)), (1 * self.COL_SIZE, self.header_size))
 
             upgrade_one_cost = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"]
             upgrade_one_text = self.tower_upgrade_data["{}".format(self.tower_to_upgrade.tower_type)]["1"]["{}".format(self.tower_to_upgrade.upgrade_one_counter)]["text"]
@@ -536,7 +596,7 @@ class GAME:
             self.display_single_upgrade(self.upgrade_button_two, upgrade_two_cost, upgrade_two_text)
             self.display_single_upgrade(self.upgrade_button_three, upgrade_three_cost, upgrade_three_text)
 
-            self.screen.blit(self.font.render("Value: {}".format(self.tower_to_upgrade.value),True,(0,0,0)), (self.COL_SIZE, self.ROW_SIZE * 13 + self.header_size))
+            self.screen.blit(self.small_button_font.render("Value: {}$".format(self.tower_to_upgrade.value),False,(0,0,0)), (self.COL_SIZE, self.ROW_SIZE * 13 + self.header_size))
             self.sell_tower_btn.draw_from_color(self.screen)
             self.sell_tower_btn.check_collision(pygame.mouse.get_pos(), self.mouse_clicked)
 
@@ -592,9 +652,9 @@ class GAME:
             self.skip_timer_button.draw_from_color(self.screen)
             self.skip_timer_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
-        self.screen.blit(self.font.render("{m}$".format(m = self.player_money), True, (0,0,0)),
+        self.screen.blit(self.header_font.render("{m}$".format(m = self.player_money), False, (0,0,0)),
                          (self.screen.get_width()/4*0.8, 5))
-        self.screen.blit(self.font.render("Wave {c}".format(c = self.wave_counter+1), True, (255, 255, 255)),
+        self.screen.blit(self.header_font.render("Wave {c}".format(c = self.wave_counter+1), False, (255, 255, 255)),
                          (self.screen.get_width()/4*0.3, 5))
 
     def draw_player_health_bar(self):
@@ -701,6 +761,13 @@ class GAME:
                             enemy.current_health -= bullet.damage
                             enemy.last_hit_by = bullet
                             bullet.pierce -= 1
+
+                            self.bullet_sound_channel = self.bullet_hit_sound.play()
+                            if self.bullet_sound_channel and self.bullet_sound_channel.get_busy():
+                                pass
+                            else:
+                                self.bullet_sound_channel = self.bullet_hit_sound.play()
+
                             if bullet.pierce <= 0:
                                 if bullet in tower.bullet_list: tower.bullet_list.remove(bullet)
                     if enemy.current_health <= 0:
@@ -711,20 +778,20 @@ class GAME:
     def check_player_health(self):
         if self.player_health <= 0:
             self.game_running = False
-            self.running = False
+            self.game_over = True
 
     def display_single_upgrade(self, button, cost, text):
         upgrade_rect = button.draw_from_color(self.screen)
         button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
-        upgrade_box_text = self.font.render("{}$".format(cost), True, (255, 255, 255))
+        upgrade_box_text = self.tower_menu_font.render("{}$".format(cost), False, (255, 255, 255))
         text_rect = upgrade_box_text.get_rect(
             center=(upgrade_rect.width / 2 + upgrade_rect.x, upgrade_rect.height / 2 + upgrade_rect.y))
         self.screen.blit(upgrade_box_text, text_rect)
 
-        upgrade_text = self.font.render("{}".format(text), True, (0, 0, 0))
+        upgrade_text = self.tower_menu_font.render("{}".format(text), False, (0, 0, 0))
         text_rect = upgrade_box_text.get_rect(
-            center=(upgrade_rect.x * 2.6, upgrade_rect.height / 2 + upgrade_rect.y))
+            center=(upgrade_rect.x * 5, upgrade_rect.height / 2 + upgrade_rect.y))
         self.screen.blit(upgrade_text, text_rect)
 
     def buy_upgrade_one(self):
@@ -755,17 +822,22 @@ class GAME:
         self.screen.blit(circle_surface, ((tower.x * self.COL_SIZE + (self.COL_SIZE * 0.5) - tower.radius),
                                           (tower.y * self.ROW_SIZE + (self.ROW_SIZE * 0.5) - tower.radius) + self.header_size))
 
-    def reset_game(self):
+    def reset_full_game(self):
+        self.reset_game_values()
+        self.path = []
         self.map_selection = None
+
+    def reset_game_values(self):
         self.player_health = self.player_max_health
         self.player_money = 500
+        WAVE.wave_number_counter = 0
+        self.wave_list = []
         self.wave_list = init_waves()
         self.wave_counter = 0
         self.enemies_spawned = 0
         self.enemy_list = []
         self.tower_list = []
         self.tower_counter = 0
-        self.path = []
 
         self.inventory_open = False
         self.upgrades_open = False
@@ -775,8 +847,7 @@ class GAME:
         self.move_orange_tower = None
         self.move_gray_tower = None
 
-        self.wave_timer = TIMER(self.font, (0, 0, 0), 15, self.screen.get_width() / 4 * 3, 5)
-
+        self.wave_timer = TIMER(self.header_font, (0, 0, 0), 15, self.screen.get_width() / 4 * 3, 5)
     # </editor-fold>
 
     # <editor-fold desc="buttons">
@@ -808,6 +879,7 @@ class GAME:
         self.pause_menu = False
         self.running = False
         self.map_picker = False
+        self.game_over = False
 
     def skip_button(self):
         self.wave_timer.second_counter = 0
@@ -853,8 +925,20 @@ class GAME:
 
     def main_menu_button(self):
         self.pause_menu = False
+        self.game_over = False
         self.main_menu = True
-        self.reset_game()
+        self.reset_full_game()
+
+    def play_again_button_func(self):
+        self.game_over = False
+        self.game_running = True
+        self.reset_game_values()
+
+    def return_to_map_picker_from_game(self):
+        self.game_over = False
+        self.map_picker = True
+        self.reset_full_game()
+
     # </editor-fold>
 
 pygame.init()

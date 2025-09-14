@@ -58,9 +58,9 @@ class BasicTower(TOWER):
         self.radius_rect_circle = pygame.Rect((self.x * COL_SIZE) - self.radius / 2,
                                               self.y * ROW_SIZE - self.radius / 2, self.radius, self.radius)
         self.damage = 1  # 1 damage
-        self.fire_rate = 400  # 5 shots per second
+        self.fire_rate = 1000  # 5 shots per second
         self.bullet_speed = 20  # 50 pixels per second
-        self.pierce = 2
+        self.pierce = 3
         self.value = self.cost // 2
 
     def fire(self, enemy):
@@ -88,28 +88,28 @@ class BasicTower(TOWER):
             match self.upgrade_one_counter:
                 case 0:
                     self.upgrade_one_counter += 1
-                    self.fire_rate -= 150
+                    self.radius += 250
                 case 1:
                     self.upgrade_one_counter += 1
-                    self.damage += 2
+                    self.radius += 250
                 case 2:
                     self.upgrade_one_maxed = True
+                    self.pierce += 2
+                    self.damage += 1
 
     def upgrade_two(self):
         if not self.upgrade_two_maxed:
+            self.update_value("2", self.upgrade_two_counter)
             match self.upgrade_two_counter:
                 case 0:
                     self.upgrade_two_counter += 1
-                    self.pierce = 2
-                    self.value += self.upgrade_data[self.tower_type]["2"]["0"]["cost"] // 2
+                    self.fire_rate -= 500
                 case 1:
                     self.upgrade_two_counter += 1
-                    self.pierce = 4
-                    self.value += self.upgrade_data[self.tower_type]["2"]["1"]["cost"] // 2
+                    self.fire_rate -= 250
                 case 2:
                     self.upgrade_two_maxed = True
-                    self.pierce = 999999
-                    self.value += self.upgrade_data[self.tower_type]["2"]["2"]["cost"] // 2
+                    self.fire_rate = 20
 
     def upgrade_three(self):
         if not self.upgrade_three_maxed:
@@ -117,7 +117,7 @@ class BasicTower(TOWER):
             match self.upgrade_three_counter:
                 case 0:
                     self.upgrade_three_counter += 1
-                    self.damage += 5
+                    self.damage += 2
                 case 1:
                     self.upgrade_three_counter += 1
                     self.damage += 5
@@ -125,15 +125,17 @@ class BasicTower(TOWER):
                     self.upgrade_three_maxed = True
                     self.pierce = 999999
                     self.bullet_size *= 5
+                    self.fire_rate += 500
+                    self.damage += 20
 
 class CircleTower(TOWER):
     def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color):
         super().__init__(x, y, tower_type, COL_SIZE, ROW_SIZE, color)
-        self.radius = 250  # 500 pixels
+        self.radius = 100
         self.radius_rect_circle = pygame.Rect((self.x * COL_SIZE) - self.radius / 2,
                                               self.y * ROW_SIZE - self.radius / 2, self.radius, self.radius)
         self.damage = 1  # 1 damage
-        self.fire_rate = 500  # 5 shots per second
+        self.fire_rate = 1000  # 5 shots per second
         self.bullet_speed = 20  # 50 pixels per second
 
     def fire(self, enemy):
@@ -188,12 +190,14 @@ class CircleTower(TOWER):
             match self.upgrade_one_counter:
                 case 0:
                     self.upgrade_one_counter += 1
-                    self.fire_rate -= 250
+                    self.fire_rate /= 1.5
                 case 1:
                     self.upgrade_one_counter += 1
-                    self.fire_rate -= 150
+                    self.fire_rate /= 1.5
                 case 2:
-                    self.fire_rate -= 50
+                    self.fire_rate = 50
+                    self.damage += 5
+                    self.pierce = 2
                     self.upgrade_one_maxed = True
 
     def upgrade_two(self):
@@ -219,8 +223,9 @@ class CircleTower(TOWER):
                     self.damage += 2
                 case 1:
                     self.upgrade_three_counter += 1
-                    self.damage += 5
+                    self.damage += 7
                 case 2:
+                    self.pierce = 3
                     self.upgrade_three_maxed = True
 
 class ArcTower(TOWER):

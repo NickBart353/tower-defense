@@ -21,6 +21,7 @@ class BUTTON:
         self.rect = pygame.Rect(self.start_x, self.start_y, self.width, self.height)
         self.hovered = False
         self.clicked = False
+        self.sound = pygame.mixer.Sound('assets/sounds/menu/menu_hover.wav')
 
     def draw_from_color(self,screen):
         if not self.hovered:
@@ -45,7 +46,7 @@ class BUTTON:
         screen.blit(self.img, (self.start_x, self.start_y))
 
         if self.text and self.font and self.text_color:
-            centered_text = self.font.render(self.text, True, self.text_color)
+            centered_text = self.font.render(self.text, False, self.text_color)
             text_rect = centered_text.get_rect(center=(self.width/2 + self.start_x, self.height/2 + self.start_y))
             screen.blit(centered_text, text_rect)
 
@@ -56,6 +57,8 @@ class BUTTON:
 
     def check_collision(self, mouse_pos, mouse_click):
         if self.rect.collidepoint(mouse_pos):
+            if not self.hovered:
+                self.sound.play()
             self.hovered = True
         else:
             self.hovered = False
