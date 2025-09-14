@@ -25,6 +25,7 @@ def get_map_data():
             "start_color": (250, 250, 0),
             "end_color": (36, 32, 22),
             "obstacle_color": (158, 158, 158),
+            "preview": "assets/img/map_previews/grass.png",
         },
         "1":{
             "name": "Snowy Mountains",
@@ -35,17 +36,8 @@ def get_map_data():
             "start_color": (108, 245, 192),
             "end_color": (64, 108, 184),
             "obstacle_color": (95, 152, 245),
+            "preview": "assets/img/map_previews/snow.png",
         },
-        # "2": {
-        #     "name": "Dunes",
-        #     "name_val": "desert",
-        #     "file": "maps/desert.csv",
-        #     "background_color": (252, 218, 78),
-        #     "path_color": (255, 249, 181),
-        #     "start_color": (255, 164, 28),
-        #     "end_color": (153, 149, 103),
-        #     "obstacle_color": (255, 247, 0),
-        # },
         "2": {
             "name": "Dunes",
             "name_val": "desert",
@@ -55,5 +47,6 @@ def get_map_data():
             "start_color": (95, 158, 160),
             "end_color": (200, 80, 50),
             "obstacle_color": (139, 125, 107),
+            "preview": "assets/img/map_previews/desert.png",
         },
     }

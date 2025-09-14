@@ -297,8 +297,8 @@ class GAME:
 
         map_button_list = []
         temp_counter = 0
-        square_width = self.screen.get_width() / 6
-        square_height = 300
+        square_width = self.screen.get_width() / 4
+        square_height = self.screen.get_height() / 5
         total_squares_width = 3 * square_width
         total_gap_width = self.screen.get_width() - total_squares_width
         gap_size = total_gap_width / 4
@@ -306,7 +306,7 @@ class GAME:
         for i, (key, value) in enumerate(self.map_dict.items()):
             map_button_list.append(BUTTON((gap_size * (temp_counter + 1)) + (square_width * temp_counter), self.screen.get_height() / 3, square_width, square_height,
                                           lambda: self.select_map(i),
-                                          color_default=(value["background_color"]), color_hover=(255, 255, 255)))
+                                          img= pygame.image.load(value["preview"]).convert_alpha(), text= value["name"],font=self.font, text_color=(0,0,0)))
             temp_counter += 1
             if temp_counter == 3: temp_counter = 0
 
@@ -316,7 +316,7 @@ class GAME:
             for i, button in enumerate(map_button_list):
                 if i == self.map_selection:
                     pygame.draw.rect(self.screen, (0,0,0), (button.rect.x-2, button.rect.y-2, button.rect.width+4, button.rect.height+4))
-                button.draw_from_color(self.screen)
+                button.draw_from_image(self.screen)
                 button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
             select_map_button.draw_from_color(self.screen)
@@ -829,6 +829,7 @@ class GAME:
         self.upgrades_open = False
 
     def back_to_main_menu(self):
+        self.map_selection = None
         self.map_picker = False
         self.main_menu = True
 
