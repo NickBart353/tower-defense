@@ -24,7 +24,7 @@ def get_map_data():
             "path_color": (115, 72, 23),
             "start_color": (36, 32, 22),
             "end_color": (250, 250, 0),
-            "obstacle_color": (32, 77, 30),
+            "obstacle_color": (189, 189, 189),
         },
         "1":{
             "name": "Snowy Mountains",
@@ -34,7 +34,7 @@ def get_map_data():
             "path_color": (168, 215, 255),
             "start_color": (146, 232, 218),
             "end_color": (64, 108, 184),
-            "obstacle_color": (189, 189, 189),
+            "obstacle_color": (9, 88, 217),
         },
         "2": {
             "name": "Dunes",
@@ -44,6 +44,6 @@ def get_map_data():
             "path_color": (255, 249, 181),
             "start_color": (153, 149, 103),
             "end_color": (202, 242, 39),
-            "obstacle_color": (143, 132, 86),
+            "obstacle_color": (255, 247, 0),
         },
     }

@@ -1,23 +1,24 @@
 import math
 import pygame
 
-from filereader import *
-from enemy import *
-from tower import *
-from bullet import *
-from wave import *
+from filereader import read_map, get_map_data
+from enemy import ENEMY
+from tower import TOWER, BasicTower, CircleTower, ArcTower, get_tower_cost
+from bullet import BULLET
+from wave import init_waves
 from button import BUTTON
 from timed_text import TIMER
-from upgrade import *
-from tile import *
+from upgrade import get_upgrade_data
+from tile import TILE
 
 class GAME:
+
     # <editor-fold desc="init funcs">
     def __init__(self):
         #important stuff
         self.right_mouse_clicked = False
-        #self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
-        self.screen = pygame.display.set_mode((1400,700))
+        self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
+        #self.screen = pygame.display.set_mode((1400,700))
         self.clock = pygame.time.Clock()
         self.delta_time = 0
 
@@ -177,6 +178,7 @@ class GAME:
                 self.main_menu_loop()
             if self.map_picker:
                 self.map_pick_loop()
+            self.mouse_clicked_once = False
 
     def game_loop(self):
 
@@ -227,6 +229,10 @@ class GAME:
                                  lambda: self.continue_button(),
                                  color_default = (0,255,0), color_hover = (0,200,0), text = "Continue", font=self.font, text_color=(0,0,0))
 
+        main_menu_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 130, 160, 30,
+                                 lambda: self.main_menu_button(),
+                                 color_default=(150, 150, 150), color_hover=(100, 100, 100), text="Main menu", font=self.font,text_color=(0, 0, 0))
+
         exit_game_button = BUTTON(self.screen.get_width()/2-80, self.screen.get_height()/2+150, 160, 30,
                                  lambda: self.exit_game_button(),
                                  color_default = (255,0,0), color_hover = (200,0,0), text = "Exit", font=self.font, text_color=(0,0,0))
@@ -238,11 +244,15 @@ class GAME:
             continue_button.draw_from_color(self.screen)
             continue_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
+            main_menu_button.draw_from_color(self.screen)
+            main_menu_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
             exit_game_button.draw_from_color(self.screen)
             exit_game_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
             pygame.display.update(menu_rect)
             self.delta_time = self.clock.tick(60) / 1000
+            self.mouse_clicked_once = False
 
             self.get_events()
 
@@ -269,6 +279,7 @@ class GAME:
 
             self.delta_time = self.clock.tick(60) / 1000
             pygame.display.update()
+            self.mouse_clicked_once = False
 
             self.get_events()
 
@@ -631,6 +642,7 @@ class GAME:
             if tower_rect.colliderect(self.tower_overlay.get_rect()) and not self.mouse_clicked and self.tower_counter > 0 and self.inventory_open:
                 self.reset_moving_tower()
             can_place_tower = True
+            tower_collides_with_disallowed_tile = False
             for line in self.arr:
                 for tile in line:
                     if self.tower_list:
@@ -643,8 +655,13 @@ class GAME:
                     if not tile.field_type == 0 and tower_rect.colliderect(tile.rect):
                         self.tower_drag_radius_color = (250, 20, 20, 50)
                         can_place_tower = False
+                        tower_collides_with_disallowed_tile = True
+                    elif (tile.field_type == 0 and tower_rect.colliderect(tile.rect)) and tower_collides_with_disallowed_tile:
+                        can_place_tower = False
+                        self.tower_drag_radius_color = (250, 20, 20, 50)
                     elif tile.field_type == 0 and tower_rect.colliderect(tile.rect):
                         self.tower_drag_radius_color = (50, 50, 50, 50)
+                        tower_collides_with_disallowed_tile = False
 
             if can_place_tower and not self.mouse_clicked and self.tower_counter > 0:
                 match tower_type:
@@ -737,6 +754,29 @@ class GAME:
 
         self.screen.blit(circle_surface, ((tower.x * self.COL_SIZE + (self.COL_SIZE * 0.5) - tower.radius),
                                           (tower.y * self.ROW_SIZE + (self.ROW_SIZE * 0.5) - tower.radius) + self.header_size))
+
+    def reset_game(self):
+        self.map_selection = None
+        self.player_health = self.player_max_health
+        self.player_money = 500
+        self.wave_list = init_waves()
+        self.wave_counter = 0
+        self.enemies_spawned = 0
+        self.enemy_list = []
+        self.tower_list = []
+        self.tower_counter = 0
+        self.path = []
+
+        self.inventory_open = False
+        self.upgrades_open = False
+        self.mouse_clicked = False
+        self.mouse_clicked_once = False
+        self.move_pink_tower = False
+        self.move_orange_tower = None
+        self.move_gray_tower = None
+
+        self.wave_timer = TIMER(self.font, (0, 0, 0), 15, self.screen.get_width() / 4 * 3, 5)
+
     # </editor-fold>
 
     # <editor-fold desc="buttons">
@@ -809,8 +849,12 @@ class GAME:
             self.END = int(len(self.path))
             self.map_picker = False
             self.game_running = True
-    # </editor-fold>
 
+    def main_menu_button(self):
+        self.pause_menu = False
+        self.main_menu = True
+        self.reset_game()
+    # </editor-fold>
 
 pygame.init()
 game = GAME()
