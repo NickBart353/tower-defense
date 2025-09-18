@@ -1,8 +1,8 @@
 import math
 import pygame
 
-from upgrade import get_upgrade_data
-from bullet import BULLET
+from classes.upgrade import get_upgrade_data
+from classes.bullet import BULLET
 
 class TOWER:
     def __init__(self, x, y, tower_type, COL_SIZE, ROW_SIZE, color, rect = None):

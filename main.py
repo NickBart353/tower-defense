@@ -1,15 +1,14 @@
 import math
 import pygame
 
-from filereader import read_map, get_map_data
-from enemy import ENEMY
-from tower import TOWER, BasicTower, CircleTower, ArcTower, get_tower_cost
-from bullet import BULLET
-from wave import init_waves, WAVE
-from button import BUTTON
-from timed_text import TIMER
-from upgrade import get_upgrade_data
-from tile import TILE
+from classes.filereader import read_map, get_map_data
+from classes.tower import TOWER, BasicTower, CircleTower, ArcTower, get_tower_cost
+from classes.wave import init_waves, WAVE
+from classes.button import BUTTON
+from classes.timed_text import TIMER
+from classes.upgrade import get_upgrade_data
+from classes.tile import TILE
+
 
 class GAME:
 

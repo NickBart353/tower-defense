@@ -21,7 +21,7 @@ class BUTTON:
         self.rect = pygame.Rect(self.start_x, self.start_y, self.width, self.height)
         self.hovered = False
         self.clicked = False
-        self.sound = pygame.mixer.Sound('assets/sounds/menu/menu_hover.wav')
+        self.sound = pygame.mixer.Sound('./assets/sounds/menu/menu_hover.wav')
 
     def draw_from_color(self,screen):
         if not self.hovered:

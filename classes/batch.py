@@ -1,4 +1,4 @@
-from enemy import ENEMY
+from classes.enemy import ENEMY
 
 class BATCH:
     def __init__(self, enemy_type, amount, threshold):

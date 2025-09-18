@@ -1,8 +1,9 @@
 import csv
 
-from tile import TILE
+from classes.tile import TILE
 
 def read_map(map_location):
+    map_location = "./{}".format(map_location)
     map_array = []
     temp_array = []
     with open("{}".format(map_location), "r") as file:

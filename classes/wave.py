@@ -1,8 +1,6 @@
-import pygame
-
 from random import randint
-from enemy import *
-from batch import BATCH
+from classes.enemy import *
+from classes.batch import BATCH
 
 class WAVE:
     wave_number_counter = 0
