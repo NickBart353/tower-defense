@@ -88,10 +88,12 @@ class BasicTower(TOWER):
             match self.upgrade_one_counter:
                 case 0:
                     self.upgrade_one_counter += 1
-                    self.radius += 250
+                    self.damage += 1
+                    self.radius += 100
                 case 1:
                     self.upgrade_one_counter += 1
-                    self.radius += 250
+                    self.damage += 1
+                    self.radius += 100
                 case 2:
                     self.upgrade_one_maxed = True
                     self.pierce += 2
@@ -103,12 +105,15 @@ class BasicTower(TOWER):
             match self.upgrade_two_counter:
                 case 0:
                     self.upgrade_two_counter += 1
+                    self.damage += 1
                     self.fire_rate -= 500
                 case 1:
                     self.upgrade_two_counter += 1
+                    self.damage += 1
                     self.fire_rate -= 250
                 case 2:
                     self.upgrade_two_maxed = True
+                    self.damage += 1
                     self.fire_rate = 20
 
     def upgrade_three(self):
@@ -125,7 +130,7 @@ class BasicTower(TOWER):
                     self.upgrade_three_maxed = True
                     self.pierce = 999999
                     self.bullet_size *= 5
-                    self.fire_rate += 500
+                    self.fire_rate += 250
                     self.damage += 20
 
 class CircleTower(TOWER):
@@ -137,51 +142,92 @@ class CircleTower(TOWER):
         self.damage = 1  # 1 damage
         self.fire_rate = 1000  # 5 shots per second
         self.bullet_speed = 20  # 50 pixels per second
+        self.COL_SIZE = COL_SIZE
+        self.ROW_SIZE = ROW_SIZE
+        self.bullet_speed = 20
+        self.pierce = 2
+        self.radius = 100
 
     def fire(self, enemy):
         now = pygame.time.get_ticks()
         if now > self.fire_rate + self.last_fired:
             self.last_fired = now
-            self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 0, -1, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 0, 1, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 1, 0, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, -1, 0, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 0.5, 0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, 0.5, -0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, -0.5, 0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            self.bullet_list.append(
-                BULLET(self.x + 0.5, self.y + 0.5, -0.5, -0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            if self.upgrade_three_maxed:
+            if not self.upgrade_two_maxed:
                 self.bullet_list.append(
-                    BULLET(self.x + 0.5, self.y + 0.5, 0.25, 0.75, self.bullet_speed, self.radius, self.damage,
+                    BULLET(self.x + 0.5, self.y + 0.5, 0, -1, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+                self.bullet_list.append(
+                    BULLET(self.x + 0.5, self.y + 0.5, 0, 1, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+                self.bullet_list.append(
+                    BULLET(self.x + 0.5, self.y + 0.5, 1, 0, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+                self.bullet_list.append(
+                    BULLET(self.x + 0.5, self.y + 0.5, -1, 0, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+                self.bullet_list.append(
+                    BULLET(self.x + 0.5, self.y + 0.5, 0.5, 0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+                self.bullet_list.append(
+                    BULLET(self.x + 0.5, self.y + 0.5, 0.5, -0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+                self.bullet_list.append(
+                    BULLET(self.x + 0.5, self.y + 0.5, -0.5, 0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+                self.bullet_list.append(
+                    BULLET(self.x + 0.5, self.y + 0.5, -0.5, -0.5, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+                if self.upgrade_three_maxed:
+                    self.bullet_list.append(
+                        BULLET(self.x + 0.5, self.y + 0.5, 0.25, 0.75, self.bullet_speed, self.radius, self.damage,
+                               self.bullet_size, self.pierce))
+                    self.bullet_list.append(
+                        BULLET(self.x + 0.5, self.y + 0.5, 0.25, -0.75, self.bullet_speed, self.radius, self.damage,
+                               self.bullet_size, self.pierce))
+                    self.bullet_list.append(
+                        BULLET(self.x + 0.5, self.y + 0.5, -0.25, 0.75, self.bullet_speed, self.radius, self.damage,
+                               self.bullet_size, self.pierce))
+                    self.bullet_list.append(
+                        BULLET(self.x + 0.5, self.y + 0.5, -0.25, -0.75, self.bullet_speed, self.radius, self.damage,
+                               self.bullet_size, self.pierce))
+                    self.bullet_list.append(
+                        BULLET(self.x + 0.5, self.y + 0.5, 0.75, 0.25, self.bullet_speed, self.radius, self.damage,
+                               self.bullet_size, self.pierce))
+                    self.bullet_list.append(
+                        BULLET(self.x + 0.5, self.y + 0.5, 0.75, -0.25, self.bullet_speed, self.radius, self.damage,
+                               self.bullet_size, self.pierce))
+                    self.bullet_list.append(
+                        BULLET(self.x + 0.5, self.y + 0.5, -0.75, 0.25, self.bullet_speed, self.radius, self.damage,
+                               self.bullet_size, self.pierce))
+                    self.bullet_list.append(
+                        BULLET(self.x + 0.5, self.y + 0.5, -0.75, -0.25, self.bullet_speed, self.radius, self.damage,
+                               self.bullet_size, self.pierce))
+            else:
+                self.last_fired = now
+                num_bullets = 20
+                angle_step = 2 * math.pi / num_bullets
+
+                angle1 = self.circle_counter * angle_step
+                angle2 = 0
+                if self.circle_counter + 5 < 20:
+                    angle2 = (self.circle_counter + 5) * angle_step
+                else:
+                    angle2 = (-5 + self.circle_counter) * angle_step
+                self.circle_counter += 1
+                if self.circle_counter >= num_bullets:
+                    self.circle_counter = 0
+
+                dx_pos = math.cos(angle1)
+                dy_pos = math.sin(angle1)
+                dx_neg = math.cos(angle1) * -1
+                dy_neg = math.sin(angle1) * -1
+                dx_half = math.cos(angle2)
+                dy_half = math.sin(angle2)
+                dx_calf = math.cos(angle2) * -1
+                dy_calf = math.sin(angle2) * -1
+                self.bullet_list.append(
+                    BULLET(self.x + 0.5, self.y + 0.5, dx_pos, dy_pos, self.bullet_speed, self.radius, self.damage,
                            self.bullet_size, self.pierce))
                 self.bullet_list.append(
-                    BULLET(self.x + 0.5, self.y + 0.5, 0.25, -0.75, self.bullet_speed, self.radius, self.damage,
+                    BULLET(self.x + 0.5, self.y + 0.5, dx_neg, dy_neg, self.bullet_speed, self.radius, self.damage,
                            self.bullet_size, self.pierce))
                 self.bullet_list.append(
-                    BULLET(self.x + 0.5, self.y + 0.5, -0.25, 0.75, self.bullet_speed, self.radius, self.damage,
+                    BULLET(self.x + 0.5, self.y + 0.5, dx_half, dy_half, self.bullet_speed, self.radius, self.damage,
                            self.bullet_size, self.pierce))
                 self.bullet_list.append(
-                    BULLET(self.x + 0.5, self.y + 0.5, -0.25, -0.75, self.bullet_speed, self.radius, self.damage,
-                           self.bullet_size, self.pierce))
-                self.bullet_list.append(
-                    BULLET(self.x + 0.5, self.y + 0.5, 0.75, 0.25, self.bullet_speed, self.radius, self.damage,
-                           self.bullet_size, self.pierce))
-                self.bullet_list.append(
-                    BULLET(self.x + 0.5, self.y + 0.5, 0.75, -0.25, self.bullet_speed, self.radius, self.damage,
-                           self.bullet_size, self.pierce))
-                self.bullet_list.append(
-                    BULLET(self.x + 0.5, self.y + 0.5, -0.75, 0.25, self.bullet_speed, self.radius, self.damage,
-                           self.bullet_size, self.pierce))
-                self.bullet_list.append(
-                    BULLET(self.x + 0.5, self.y + 0.5, -0.75, -0.25, self.bullet_speed, self.radius, self.damage,
+                    BULLET(self.x + 0.5, self.y + 0.5, dx_calf, dy_calf, self.bullet_speed, self.radius, self.damage,
                            self.bullet_size, self.pierce))
 
     def upgrade_one(self):
@@ -197,7 +243,7 @@ class CircleTower(TOWER):
                 case 2:
                     self.fire_rate = 50
                     self.damage += 5
-                    self.pierce = 2
+                    self.pierce += 1
                     self.upgrade_one_maxed = True
 
     def upgrade_two(self):
@@ -206,12 +252,15 @@ class CircleTower(TOWER):
             match self.upgrade_two_counter:
                 case 0:
                     self.upgrade_two_counter += 1
-                    self.pierce = 2
+                    self.pierce += 2
                 case 1:
                     self.upgrade_two_counter += 1
-                    self.pierce = 4
+                    self.pierce += 2
                 case 2:
                     self.upgrade_two_maxed = True
+                    self.bullet_speed = 10
+                    self.fire_rate -= 100
+                    self.radius += 150
                     self.pierce = 999999
 
     def upgrade_three(self):
@@ -267,9 +316,8 @@ class ArcTower(TOWER):
                 BULLET(self.x + 0.5, self.y + 0.5, dx_pos, dy_pos, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
             self.bullet_list.append(
                 BULLET(self.x + 0.5, self.y + 0.5, dx_neg, dy_neg, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-            if self.upgrade_three_maxed:
-                self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_half, dy_half, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
-                self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_calf, dy_calf, self.bullet_speed, self.radius, self.damage,self.bullet_size, self.pierce))
+            self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_half, dy_half, self.bullet_speed, self.radius, self.damage, self.bullet_size, self.pierce))
+            self.bullet_list.append(BULLET(self.x + 0.5, self.y + 0.5, dx_calf, dy_calf, self.bullet_speed, self.radius, self.damage,self.bullet_size, self.pierce))
 
     def upgrade_one(self):
         if not self.upgrade_one_maxed:

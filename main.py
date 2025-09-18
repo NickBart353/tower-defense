@@ -57,9 +57,9 @@ class GAME:
         #ui
         self.sidebar_size = self.COL_SIZE*6
         self.tower_overlay = pygame.Surface((self.sidebar_size, self.screen.get_height()), pygame.SRCALPHA)
-        self.tower_overlay.fill((255, 255, 255, 180))
+        self.tower_overlay.fill((170, 170, 170, 100))
         self.upgrade_overlay = pygame.Surface((self.sidebar_size, self.screen.get_height()), pygame.SRCALPHA)
-        self.upgrade_overlay.fill((255, 255, 255, 180))
+        self.upgrade_overlay.fill((170, 170, 170, 100))
 
         self.header_size = self.ROW_SIZE
 
@@ -141,7 +141,7 @@ class GAME:
 
         #sounds
         self.bullet_hit_sound = pygame.mixer.Sound("assets/sounds/game/pop-268648.mp3")
-        self.bullet_hit_sound.set_volume(0.5)
+        self.bullet_hit_sound.set_volume(0.1)
         self.bullet_sound_channel = None
 
         #player
@@ -238,13 +238,18 @@ class GAME:
 
     def pause_loop(self):
         menu_rect = pygame.Rect(self.screen.get_width()/2-100,self.screen.get_height()/2-200,200,400)
+
         continue_button = BUTTON(self.screen.get_width()/2-80, self.screen.get_height()/2-180, 160, 30,
                                  lambda: self.continue_button(),
                                  color_default = (0,255,0), color_hover = (0,200,0), text = "Continue", font=self.small_button_font, text_color=(0,0,0))
 
-        main_menu_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 130, 160, 30,
-                                 lambda: self.main_menu_button(),
-                                 color_default=(150, 150, 150), color_hover=(100, 100, 100), text="Main menu", font=self.small_button_font,text_color=(0, 0, 0))
+        retry_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 130, 160, 30,
+                                 lambda: self.play_again_button_func(),
+                                 color_default = (0,255,0), color_hover = (0,200,0), text="Retry", font=self.small_button_font,text_color=(0, 0, 0))
+
+        main_menu_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 80, 160, 30,
+                                  lambda: self.main_menu_button(),
+                                  color_default=(150, 150, 150), color_hover=(100, 100, 100), text="Main menu",font=self.small_button_font, text_color=(0, 0, 0))
 
         exit_game_button = BUTTON(self.screen.get_width()/2-80, self.screen.get_height()/2+150, 160, 30,
                                  lambda: self.exit_game_button(),
@@ -256,6 +261,9 @@ class GAME:
 
             continue_button.draw_from_color(self.screen)
             continue_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+
+            retry_button.draw_from_color(self.screen)
+            retry_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
             main_menu_button.draw_from_color(self.screen)
             main_menu_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
@@ -619,9 +627,11 @@ class GAME:
 
     def draw_bullets(self):
         for tower in self.tower_list:
-            for bullet in tower.bullet_list:
-                bullet.bullet_rect = pygame.draw.circle(self.screen, (255, 0, 0), (bullet.my_x*self.COL_SIZE, (bullet.my_y*self.ROW_SIZE)+self.header_size), bullet.size)
 
+            for i, bullet in enumerate(tower.bullet_list):
+
+                bullet.bullet_rect = pygame.draw.circle(self.screen, (255, 0, 0), (bullet.my_x * self.COL_SIZE, (
+                            bullet.my_y * self.ROW_SIZE) + self.header_size), bullet.size)
                 ang = math.atan2(bullet.y_vec, bullet.x_vec)
                 bullet.my_x += math.cos(ang) * bullet.velocity * self.delta_time
                 bullet.my_y += math.sin(ang) * bullet.velocity * self.delta_time
@@ -931,6 +941,7 @@ class GAME:
 
     def play_again_button_func(self):
         self.game_over = False
+        self.pause_menu = False
         self.game_running = True
         self.reset_game_values()
 

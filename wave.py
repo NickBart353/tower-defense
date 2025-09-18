@@ -74,57 +74,62 @@ def generate_list_from_wave_num(wave_number):
             batch_list.append(BATCH(7, 30, 400))
             batch_list.append(BATCH(9, 5, 400))
         case _:
-            total_monsters = 20 * wave_number
-            if wave_number < 20:
-                total_monsters -= 50
+            total_monsters = 10 * wave_number
             total_batches = total_monsters // (randint(5,30))
 
-            top_end_enemy = 1
+            top_end_enemy = 12
             bottom_end_enemy = 1
-            if wave_number < 20:
-                top_end_enemy = 10
-                bottom_end_enemy = 3
-            if 20 < wave_number < 30:
-                top_end_enemy = 12
-                bottom_end_enemy = 5
-            if 30 < wave_number:
-                top_end_enemy = 13
+            top_end_threshold = 300
+            bottom_end_threshold = 100
+            if wave_number < 15:
+                top_end_enemy = 9
+                bottom_end_enemy = 4
+                top_end_threshold = 300
+                bottom_end_threshold = 100
+            if 14 < wave_number < 20:
+                top_end_enemy = 11
                 bottom_end_enemy = 6
-
-            has_enemy_twelve = False
-            has_enemy_thirteen = False
+                top_end_threshold = 250
+                bottom_end_threshold = 100
+            if 19 < wave_number < 25:
+                top_end_enemy = 13
+                bottom_end_enemy = 9
+                top_end_threshold = 250
+                bottom_end_threshold = 80
+            if 24 < wave_number < 30:
+                top_end_enemy = 14
+                bottom_end_enemy = 11
+                top_end_threshold = 250
+                bottom_end_threshold = 80
+            if 29 < wave_number < 35:
+                top_end_enemy = 15
+                bottom_end_enemy = 12
+                top_end_threshold = 200
+                bottom_end_threshold = 50
+            if 34 < wave_number < 40:
+                top_end_enemy = 20
+                bottom_end_enemy = 14
+                top_end_threshold = 100
+                bottom_end_threshold = 50
+            if 39 < wave_number < 45:
+                top_end_threshold = 50
+                bottom_end_threshold = 30
+            if 44 < wave_number < 50:
+                top_end_threshold = 30
+                bottom_end_threshold = 20
+            if 49 < wave_number < 55:
+                top_end_threshold = 30
+                bottom_end_threshold = 15
+            if 54 < wave_number < 60:
+                top_end_threshold = 15
+                bottom_end_threshold = 5
 
             for batch in range(total_batches):
-                threshold = randint(100,400)
+                threshold = randint(bottom_end_threshold,top_end_threshold)
 
                 enemy_type = randint(bottom_end_enemy, top_end_enemy)
 
-                while ((enemy_type >= 12 and wave_number < 40 and (batch + 1) == total_batches and 3 < total_monsters)
-                       or (enemy_type == 12 and has_enemy_twelve)
-                       or (enemy_type == 13 and has_enemy_thirteen)):
-                    enemy_type = randint(bottom_end_enemy, top_end_enemy)
-
-                while ((enemy_type >= 12 and (batch + 1) == total_batches and 15 < total_monsters)
-                       or (enemy_type == 12 and has_enemy_twelve)
-                        or enemy_type == 13 and has_enemy_thirteen):
-                    enemy_type = randint(bottom_end_enemy, top_end_enemy)
-
-                if enemy_type >= 12 and wave_number < 40:
-                    match enemy_type:
-                        case 12:
-                            has_enemy_twelve = True
-                        case 13:
-                            has_enemy_thirteen = True
-                    amount = randint(1, 3)
-                elif enemy_type >= 12:
-                    match enemy_type:
-                        case 12:
-                            has_enemy_twelve = True
-                        case 13:
-                            has_enemy_thirteen = True
-                    amount = randint(5,15)
-                else:
-                    amount = randint(20,80)
+                amount = randint(20,80)
 
                 if amount > total_monsters:
                     amount = total_monsters

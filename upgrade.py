@@ -10,13 +10,13 @@ def get_upgrade_data():
                 "2":
                     {"0": {"cost": 1500, "text": "x2 Fire rate"},
                      "1": {"cost": 2800, "text": "x3 Fire rate"},
-                     "2": {"cost": 6000, "text": "Rapid Fire"},
+                     "2": {"cost": 5000, "text": "Rapid Fire"},
                      "3": {"cost": "-", "text": "-"}},
 
                 "3":
                     {"0": {"cost": 1000, "text": "+2 Damage"},
                      "1": {"cost": 2000, "text": "+5 Damage"},
-                     "2": {"cost": 8000, "text": "Cannon"},
+                     "2": {"cost": 6000, "text": "Cannon"},
                      "3": {"cost": "-", "text": "-"}}},
             "circle":
                  {"1":
@@ -28,7 +28,7 @@ def get_upgrade_data():
                  "2":
                       {"0": {"cost": 400, "text": "+2 Pierce"},
                        "1": {"cost": 1500, "text": "+4 Pierce"},
-                       "2": {"cost": 5000, "text": "Homing Bullets"},
+                       "2": {"cost": 5000, "text": "Bullet Tornado"},
                        "3": {"cost": "-", "text": "-"}},
 
                  "3":

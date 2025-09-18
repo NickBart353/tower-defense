@@ -12,79 +12,121 @@ class ENEMY:
                 self.health = 1
                 self.damage = 1
                 self.movement_speed = 1.5
-                self.color = (200,30,30)
+                self.color = (255, 25, 25)
                 self.kill_reward = 1
             case 2:
                 self.health = 2
                 self.damage = 3
                 self.movement_speed = 1.5
-                self.color = (30, 30, 200)
+                self.color = (255, 109, 25)
                 self.kill_reward = 2
             case 3:
                 self.health = 3
                 self.damage = 3
                 self.movement_speed = 2
-                self.color = (79, 224, 63)
+                self.color = (255, 167, 25)
                 self.kill_reward = 5
             case 4:
                 self.health = 5
                 self.damage = 5
                 self.movement_speed = 2
-                self.color = (210, 70, 232)
+                self.color = (255, 232, 25)
                 self.kill_reward = 5
             case 5:
                 self.health = 7
                 self.damage = 5
                 self.movement_speed = 3
-                self.color = (255, 255, 255)
+                self.color = (213, 255, 25)
                 self.kill_reward = 5
             case 6:
                 self.health = 10
                 self.damage = 5
                 self.movement_speed = 2
-                self.color = (0, 0, 0)
+                self.color = (144, 255, 25)
                 self.kill_reward = 6
             case 7:
                 self.health = 15
                 self.damage = 10
                 self.movement_speed = 4
-                self.color = (31, 236, 255)
+                self.color = (33, 255, 25)
                 self.kill_reward = 10
             case 8:
                 self.health = 3
                 self.damage = 5
                 self.movement_speed = 8
-                self.color = (233, 255, 38)
+                self.color = (25, 255, 98)
                 self.kill_reward = 5
             case 9:
-                self.health = 50
+                self.health = 25
                 self.damage = 10
                 self.movement_speed = 2
-                self.color = (208, 99, 255)
+                self.color = (25, 255, 171)
                 self.kill_reward = 15
             case 10:
-                self.health = 100
+                self.health = 75
                 self.damage = 10
-                self.movement_speed = 4
-                self.color = (255, 51, 139)
+                self.movement_speed = 3
+                self.color = (25, 255, 232)
                 self.kill_reward = 15
             case 11:
-                self.health = 250
+                self.health = 100
                 self.damage = 10
-                self.movement_speed = 5
-                self.color = (255, 186, 59)
+                self.movement_speed = 2.5
+                self.color = (25, 232, 255)
                 self.kill_reward = 15
             case 12:
-                self.health = 500
-                self.damage = 100
-                self.movement_speed = 0.4
-                self.color = (255, 173, 231)
-                self.kill_reward = 50
+                self.health = 250
+                self.damage = 20
+                self.movement_speed = 2
+                self.color = (25, 198, 255)
+                self.kill_reward = 15
             case 13:
+                self.health = 500
+                self.damage = 20
+                self.movement_speed = 2
+                self.color = (25, 151, 255)
+                self.kill_reward = 15
+            case 14:
                 self.health = 1000
-                self.damage = 100
-                self.movement_speed = 0.2
-                self.color = (203, 255, 191)
+                self.damage = 20
+                self.movement_speed = 5
+                self.color = (25, 106, 255)
+                self.kill_reward = 15
+            case 15:
+                self.health = 1500
+                self.damage = 10
+                self.movement_speed = 3
+                self.color = (121, 25, 255)
+                self.kill_reward = 15
+            case 16:
+                self.health = 2500
+                self.damage = 10
+                self.movement_speed = 4
+                self.color = (178, 25, 255)
+                self.kill_reward = 15
+            case 17:
+                self.health = 3000
+                self.damage = 10
+                self.movement_speed = 2
+                self.color = (244, 25, 255)
+                self.kill_reward = 15
+            case 18:
+                self.health = 3500
+                self.damage = 15
+                self.movement_speed = 1
+                self.color = (255, 25, 129)
+                self.kill_reward = 15
+            case 19:
+                self.health = 4000
+                self.damage = 15
+                self.movement_speed = 2
+                self.color = (0, 0, 0)
+                self.kill_reward = 15
+            case 20:
+                self.health = 5000
+                self.damage = 50
+                self.movement_speed = 1
+                self.color = (255, 255, 255)
                 self.kill_reward = 100
         self.current_health = self.health
 
