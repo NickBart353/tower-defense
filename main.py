@@ -56,9 +56,9 @@ class GAME:
         #ui
         self.sidebar_size = self.COL_SIZE*6
         self.tower_overlay = pygame.Surface((self.sidebar_size, self.screen.get_height()), pygame.SRCALPHA)
-        self.tower_overlay.fill((170, 170, 170, 100))
+        self.tower_overlay.fill((220, 220, 220, 100))
         self.upgrade_overlay = pygame.Surface((self.sidebar_size, self.screen.get_height()), pygame.SRCALPHA)
-        self.upgrade_overlay.fill((170, 170, 170, 100))
+        self.upgrade_overlay.fill((220, 220, 220, 100))
 
         self.header_size = self.ROW_SIZE
 
@@ -69,6 +69,7 @@ class GAME:
         self.map_picker_font = pygame.font.Font("assets/font/Pixeled.ttf", 23)
         self.tower_menu_font = pygame.font.Font("assets/font/Pixeled.ttf", 10)
         self.header_font = pygame.font.Font("assets/font/Pixeled.ttf", 15)
+        self.large_text_font = pygame.font.Font("assets/font/Pixeled.ttf", 50)
 
         #animations
         self.wave_timer = TIMER(self.header_font, (0,0,0), 15, self.screen.get_width()/4*3, 0)
@@ -140,15 +141,36 @@ class GAME:
 
         #sounds
         self.bullet_hit_sound = pygame.mixer.Sound("assets/sounds/game/pop-268648.mp3")
-        self.bullet_hit_sound.set_volume(0.1)
+        self.upgrade_sound = pygame.mixer.Sound("assets/sounds/game/upgrade2.wav")
+        self.hit_sound = pygame.mixer.Sound("assets/sounds/game/hit.mp3")
+        self.purchase_sound = pygame.mixer.Sound("assets/sounds/game/purchase.mp3")
+        self.next_wave_sound = pygame.mixer.Sound("assets/sounds/game/new wave.mp3")
+
+        self.game_over_sound = pygame.mixer.Sound("assets/sounds/menu/game over.mp3")
+        self.game_start_sound = pygame.mixer.Sound("assets/sounds/menu/start_game.wav")
+
+        self.bullet_hit_sound.set_volume(0.2)
+        self.upgrade_sound.set_volume(0.8)
+        self.hit_sound.set_volume(0.8)
+        self.purchase_sound.set_volume(0.4)
+        self.next_wave_sound.set_volume(0.6)
+
+        self.game_over_sound.set_volume(0.8)
+        self.game_start_sound.set_volume(0.9)
+
         self.bullet_sound_channel = None
+        self.start_game_channel = None
+        self.game_over_channel = None
+        self.upgrade_channel = None
+        self.hit_channel = None
+        self.purchase_channel = None
+        self.next_wave_channel = None
 
         #player
         self.player_max_health = 100
         self.player_health = self.player_max_health
         self.player_money = 500
-        self.score = 0
-        self.highscore = 0
+        self.kills = 0
 
         #upgrade data
         self.tower_upgrade_data = get_upgrade_data()
@@ -291,6 +313,10 @@ class GAME:
         while self.main_menu:
             self.screen.blit(title_screen_image, (0, 0))
 
+            centered_text = self.large_text_font.render("Blob defense", False, (5, 22, 15))
+            text_rect = centered_text.get_rect(center=(self.screen.get_width() / 2, self.screen.get_height() / 5))
+            self.screen.blit(centered_text, text_rect)
+
             start_game_button.draw_from_color(self.screen)
             start_game_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
@@ -352,30 +378,38 @@ class GAME:
             self.get_events()
 
     def game_over_loop(self):
-        game_over_rect = pygame.Rect(self.screen.get_width() / 2 - 100, self.screen.get_height() / 2 - 200, 200, 400)
 
-        play_again_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 180, 160, 30,
+        play_again_button = BUTTON(self.COL_SIZE * 4, self.ROW_SIZE * 10 + self.header_size, self.COL_SIZE * 4, self.ROW_SIZE /1.5,
                                  lambda: self.play_again_button_func(),
                                  color_default=(0, 255, 0), color_hover=(0, 200, 0), text="Play again",
                                  font=self.small_button_font, text_color=(0, 0, 0))
 
-        return_to_map_picker_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 130, 160, 30,
+        return_to_map_picker_button = BUTTON(self.COL_SIZE * 11, self.ROW_SIZE * 10 + self.header_size, self.COL_SIZE * 4, self.ROW_SIZE /1.5,
                                    lambda: self.return_to_map_picker_from_game(),
                                    color_default=(0, 255, 0), color_hover=(0, 200, 0), text="Pick map",
                                    font=self.small_button_font, text_color=(0, 0, 0))
 
-        main_menu_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 - 80, 160, 30,
+        main_menu_button = BUTTON(self.COL_SIZE * 17, self.ROW_SIZE * 10 + self.header_size, self.COL_SIZE * 4, self.ROW_SIZE /1.5,
                                   lambda: self.main_menu_button(),
                                   color_default=(150, 150, 150), color_hover=(100, 100, 100), text="Main menu",
                                   font=self.small_button_font, text_color=(0, 0, 0))
 
-        exit_game_button = BUTTON(self.screen.get_width() / 2 - 80, self.screen.get_height() / 2 + 150, 160, 30,
+        exit_game_button = BUTTON(self.COL_SIZE * 24, self.ROW_SIZE * 10 + self.header_size, self.COL_SIZE * 4, self.ROW_SIZE /1.5,
                                   lambda: self.exit_game_button(),
                                   color_default=(255, 0, 0), color_hover=(200, 0, 0), text="Exit",
                                   font=self.small_button_font, text_color=(0, 0, 0))
+        self.game_over_channel = self.game_over_sound.play()
 
         while self.game_over:
-            pygame.draw.rect(self.screen, (50, 50, 50), game_over_rect)
+            self.screen.fill((50,50,50))
+
+            centered_text = self.large_text_font.render("Game Over", False, (150, 20, 20))
+            text_rect = centered_text.get_rect(center=(self.screen.get_width() / 2 , self.screen.get_height() / 5))
+            self.screen.blit(centered_text, text_rect)
+
+            centered_text = self.large_button_font.render("Enemies defeated: {}".format(self.kills), False, (150, 200, 200))
+            text_rect = centered_text.get_rect(center=(self.screen.get_width() / 2 , self.screen.get_height() / 3))
+            self.screen.blit(centered_text, text_rect)
 
             play_again_button.draw_from_color(self.screen)
             play_again_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
@@ -389,7 +423,7 @@ class GAME:
             exit_game_button.draw_from_color(self.screen)
             exit_game_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
-            pygame.display.update(game_over_rect)
+            pygame.display.update()
             self.delta_time = self.clock.tick(60) / 1000
             self.mouse_clicked_once = False
 
@@ -431,6 +465,7 @@ class GAME:
 
     def update_wave(self):
         if len(self.enemy_list) <= 0 and len(self.wave_list[self.wave_counter].enemy_list) <= 0:
+            self.next_wave_channel = self.next_wave_sound.play()
             self.player_money += self.wave_list[self.wave_counter].money_reward
             self.wave_counter += 1
             self.wave_timer.played_wave_timer = False
@@ -497,6 +532,10 @@ class GAME:
                 enemy.on_tile += 1
                 if enemy.on_tile == len(self.path):
                     self.player_health -= enemy.damage
+                    self.hit_channel = self.hit_sound.play()
+                    if self.hit_channel and self.hit_channel.get_busy():
+                        self.hit_channel.stop()
+                    self.hit_channel = self.hit_sound.play()
                     self.enemy_list.remove(enemy)
 
     def draw_towers(self):
@@ -511,15 +550,15 @@ class GAME:
 
             temp_pink_tower = TOWER(1 * self.COL_SIZE, 4 * self.ROW_SIZE, "circle", self.COL_SIZE, self.ROW_SIZE, self.pink_color)
             temp_gray_tower = TOWER(1 * self.COL_SIZE, 5 * self.ROW_SIZE, "basic", self.COL_SIZE, self.ROW_SIZE, self.gray_color)
-            temp_orange_tower = TOWER(1 * self.COL_SIZE, 6 * self.ROW_SIZE, "arc", self.COL_SIZE, self.ROW_SIZE, self.orange_color)
+            #temp_orange_tower = TOWER(1 * self.COL_SIZE, 6 * self.ROW_SIZE, "arc", self.COL_SIZE, self.ROW_SIZE, self.orange_color)
 
             self.pink_tower = temp_pink_tower.draw(self.screen, self.COL_SIZE // 2)
             self.gray_tower = temp_gray_tower.draw(self.screen, self.COL_SIZE // 2)
-            self.orange_tower = temp_orange_tower.draw(self.screen, self.COL_SIZE // 2)
+            #self.orange_tower = temp_orange_tower.draw(self.screen, self.COL_SIZE // 2)
 
             self.screen.blit(self.tower_menu_font.render("{}$".format(temp_pink_tower.cost),False,(0,0,0)),(2 * self.COL_SIZE, 3.5 * self.ROW_SIZE))
             self.screen.blit(self.tower_menu_font.render("{}$".format(temp_gray_tower.cost), False, (0, 0, 0)), (2 * self.COL_SIZE, 4.5 * self.ROW_SIZE))
-            self.screen.blit(self.tower_menu_font.render("{}$".format(temp_orange_tower.cost), False, (0, 0, 0)),(2 * self.COL_SIZE, 5.5 * self.ROW_SIZE))
+            #self.screen.blit(self.tower_menu_font.render("{}$".format(temp_orange_tower.cost), False, (0, 0, 0)),(2 * self.COL_SIZE, 5.5 * self.ROW_SIZE))
 
             for line in self.arr:
                 for tile in line:
@@ -744,6 +783,7 @@ class GAME:
                         self.tower_list.append(
                             ArcTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
                 self.player_money -= self.cost_dict[tower_type]
+                self.purchase_channel = self.purchase_sound.play()
                 self.tower_counter -= 1
 
     def reset_moving_tower(self):
@@ -773,15 +813,15 @@ class GAME:
 
                             self.bullet_sound_channel = self.bullet_hit_sound.play()
                             if self.bullet_sound_channel and self.bullet_sound_channel.get_busy():
-                                pass
-                            else:
-                                self.bullet_sound_channel = self.bullet_hit_sound.play()
+                                self.bullet_sound_channel.stop()
+                            self.bullet_sound_channel = self.bullet_hit_sound.play()
 
                             if bullet.pierce <= 0:
                                 if bullet in tower.bullet_list: tower.bullet_list.remove(bullet)
                     if enemy.current_health <= 0:
                         if enemy in self.enemy_list:
                             self.player_money += enemy.kill_reward
+                            self.kills += 1
                             self.enemy_list.remove(enemy)
 
     def check_player_health(self):
@@ -808,6 +848,7 @@ class GAME:
             "{}".format(self.tower_to_upgrade.upgrade_one_counter)]["cost"]
         if cost <= self.player_money and self.upgrades_open and not self.tower_to_upgrade.upgrade_one_maxed and self.tower_to_upgrade.can_upgrade_one:
             self.tower_to_upgrade.upgrade_one()
+            self.upgrade_channel = self.upgrade_sound.play()
             self.player_money -= cost
 
     def buy_upgrade_two(self):
@@ -815,6 +856,7 @@ class GAME:
             "{}".format(self.tower_to_upgrade.upgrade_two_counter)]["cost"]
         if cost <= self.player_money and self.upgrades_open and not self.tower_to_upgrade.upgrade_two_maxed and self.tower_to_upgrade.can_upgrade_two:
             self.tower_to_upgrade.upgrade_two()
+            self.upgrade_channel = self.upgrade_sound.play()
             self.player_money -= cost
 
     def buy_upgrade_three(self):
@@ -822,6 +864,7 @@ class GAME:
             "{}".format(self.tower_to_upgrade.upgrade_three_counter)]["cost"]
         if cost <= self.player_money and self.upgrades_open and not self.tower_to_upgrade.upgrade_three_maxed and self.tower_to_upgrade.can_upgrade_three:
             self.tower_to_upgrade.upgrade_three()
+            self.upgrade_channel = self.upgrade_sound.play()
             self.player_money -= cost
 
     def draw_tower_radius(self, tower, radius_color):
@@ -847,6 +890,7 @@ class GAME:
         self.enemy_list = []
         self.tower_list = []
         self.tower_counter = 0
+        self.kills = 0
 
         self.inventory_open = False
         self.upgrades_open = False
@@ -907,6 +951,7 @@ class GAME:
                 tower_point["has_tower"] = False
 
         self.tower_to_upgrade = None
+        self.purchase_channel = self.purchase_sound.play()
         self.upgrades_open = False
 
     def back_to_main_menu(self):
@@ -918,6 +963,7 @@ class GAME:
         self.map_selection = map_num
 
     def select_and_play_map(self):
+        self.start_game_channel = self.game_start_sound.play()
         if self.map_selection is not None:
             self.arr = read_map(self.map_dict[str(self.map_selection)]["file"])
             for i in range(len(self.arr) * len(self.arr[0])):
@@ -932,6 +978,7 @@ class GAME:
             self.map_picker = False
             self.game_running = True
 
+
     def main_menu_button(self):
         self.pause_menu = False
         self.game_over = False
@@ -942,6 +989,7 @@ class GAME:
         self.game_over = False
         self.pause_menu = False
         self.game_running = True
+        self.start_game_channel =  self.game_start_sound.play()
         self.reset_game_values()
 
     def return_to_map_picker_from_game(self):
