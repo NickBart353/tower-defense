@@ -53,5 +53,41 @@ def get_upgrade_data():
                       {"0": {"cost": 600, "text": "+2 Damage"},
                        "1": {"cost": 1800, "text": "+5 Damage"},
                        "2": {"cost": 8000, "text": "+2 Tentacles"},
+                       "3": {"cost": "-", "text": "-"}}},
+             "ice":
+                 {"1":
+                      {"0": {"cost": 800, "text": "Deeper Freeze"},
+                       "1": {"cost": 1500, "text": "Arctic Chill"},
+                       "2": {"cost": 3000, "text": "Absolute Zero"},
+                       "3": {"cost": "-", "text": "-"}},
+
+                  "2":
+                      {"0": {"cost": 600, "text": "Frost Nova"},
+                       "1": {"cost": 1200, "text": "Blizzard"},
+                       "2": {"cost": 2500, "text": "Ice Storm"},
+                       "3": {"cost": "-", "text": "-"}},
+
+                  "3":
+                      {"0": {"cost": 1000, "text": "Ice Shards"},
+                       "1": {"cost": 2000, "text": "Frozen Spear"},
+                       "2": {"cost": 5000, "text": "Glacier Cannon"},
+                       "3": {"cost": "-", "text": "-"}}},
+             "fire":
+                 {"1":
+                      {"0": {"cost": 700, "text": "Smoldering Embers"},
+                       "1": {"cost": 1400, "text": "Raging Flames"},
+                       "2": {"cost": 2800, "text": "Inferno"},
+                       "3": {"cost": "-", "text": "-"}},
+
+                  "2":
+                      {"0": {"cost": 600, "text": "Fire Splash"},
+                       "1": {"cost": 1200, "text": "Molten Blast"},
+                       "2": {"cost": 2400, "text": "Volcanic Eruption"},
+                       "3": {"cost": "-", "text": "-"}},
+
+                  "3":
+                      {"0": {"cost": 800, "text": "Quick Ignition"},
+                       "1": {"cost": 1600, "text": "Flame Burst"},
+                       "2": {"cost": 4000, "text": "Phoenix Fire"},
                        "3": {"cost": "-", "text": "-"}}}
     }

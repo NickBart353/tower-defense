@@ -12,11 +12,13 @@ class TIMER:
         self.played_wave_timer = False
         self.last_updated_wave_timer = -1
 
-    def count_down_text(self, screen):
+    def count_down_text(self, screen, speed_multiplier=1.0):
 
         screen.blit(self.font.render("{s}".format(s = self.second_counter), True, self.color), (self.x, self.y))
         now = pygame.time.get_ticks()
-        if now > self.last_updated_wave_timer + 1000:
+        # Adjust countdown interval based on speed multiplier
+        countdown_interval = 1000 / speed_multiplier
+        if now > self.last_updated_wave_timer + countdown_interval:
             self.last_updated_wave_timer = now
 
             pygame.display.update()

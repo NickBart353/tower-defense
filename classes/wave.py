@@ -18,10 +18,12 @@ class WAVE:
         self.batch_counter = 0
         self.pause_between_attacks = 15000
 
-    def spawn_enemy(self, start_dict):
+    def spawn_enemy(self, start_dict, speed_multiplier=1.0):
         now = pygame.time.get_ticks()
         if len(self.enemy_list) > 0:
-            if now > self.last_time_spawned + self.enemy_list[0].spawn_threshold:
+            # Adjust spawn threshold based on speed multiplier
+            adjusted_threshold = self.enemy_list[0].spawn_threshold / speed_multiplier
+            if now > self.last_time_spawned + adjusted_threshold:
                 if len(self.enemy_list[0].enemies) > 0:
                     self.last_time_spawned = now
                     enemy = self.enemy_list[0].enemies[0]

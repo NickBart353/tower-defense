@@ -2,7 +2,7 @@ import math
 import pygame
 
 from classes.filereader import read_map, get_map_data
-from classes.tower import TOWER, BasicTower, CircleTower, ArcTower, get_tower_cost
+from classes.tower import TOWER, BasicTower, CircleTower, ArcTower, IceTower, FireTower, get_tower_cost
 from classes.wave import init_waves, WAVE
 from classes.button import BUTTON
 from classes.timed_text import TIMER
@@ -25,6 +25,8 @@ class GAME:
         self.pink_tower = pygame.Rect(0,0,0,0)
         self.gray_tower = pygame.Rect(0,0,0,0)
         self.orange_tower = pygame.Rect(0,0,0,0)
+        self.ice_tower = pygame.Rect(0,0,0,0)
+        self.fire_tower = pygame.Rect(0,0,0,0)
 
         #bools
         self.running = True
@@ -33,6 +35,7 @@ class GAME:
         self.main_menu = True
         self.map_picker = False
         self.game_over = False
+        self.speed_2x_mode = False  # Track if 2x speed mode is active
 
         self.inventory_open = False
         self.upgrades_open = False
@@ -41,6 +44,8 @@ class GAME:
         self.move_pink_tower = False
         self.move_orange_tower = None
         self.move_gray_tower = None
+        self.move_ice_tower = None
+        self.move_fire_tower = None
 
         #map
         self.map_dict = get_map_data()
@@ -72,7 +77,7 @@ class GAME:
         self.large_text_font = pygame.font.Font("assets/font/Pixeled.ttf", 50)
 
         #animations
-        self.wave_timer = TIMER(self.header_font, (0,0,0), 15, self.screen.get_width()/4*3, 0)
+        self.wave_timer = TIMER(self.header_font, (0,0,0), 15, self.screen.get_width()/4*2.8 + (self.COL_SIZE - 2)/2 - 10, 5)
 
         #buttons
         self.tower_overlay_button = BUTTON(1,1,self.COL_SIZE - 2,self.header_size - 2,
@@ -86,6 +91,10 @@ class GAME:
         self.skip_timer_button = BUTTON(self.screen.get_width()/4*2.8,1,self.COL_SIZE - 2,self.header_size - 2,
                                         lambda: self.skip_button(),
                                         color_default = (100, 100, 100), color_hover = (150, 150, 150))
+
+        self.speed_2x_button = BUTTON(self.screen.get_width()/4*2.8 + self.COL_SIZE + 5,1,self.COL_SIZE - 2,self.header_size - 2,
+                                     lambda: self.toggle_2x_speed(),
+                                     color_default = (50, 150, 50), color_hover = (70, 180, 70))
 
         self.upgrade_one_color = (23, 48, 138)
         self.upgrade_one_color_hover = (23, 48, 168)
@@ -129,13 +138,17 @@ class GAME:
         self.tower_point_list = None
         self.cost_dict = {"basic": get_tower_cost("basic"),
                           "circle": get_tower_cost("circle"),
-                          "arc": get_tower_cost("arc"),}
+                          "arc": get_tower_cost("arc"),
+                          "ice": get_tower_cost("ice"),
+                          "fire": get_tower_cost("fire"),}
         self.tower_to_upgrade = None
 
         #colors
         self.pink_color = (250, 0, 250)
         self.gray_color = (150, 150, 150)
         self.orange_color = (250, 170, 30)
+        self.ice_color = (173, 216, 230)  # Light blue color for ice tower
+        self.fire_color = (255, 100, 0)  # Orange-red color for fire tower
         self.tower_overlay_button_color = (196, 173, 135)
         self.tower_drag_radius_color = (50, 50, 50, 50)
 
@@ -247,7 +260,7 @@ class GAME:
             self.draw_player_health_bar()
 
             if not self.wave_timer.played_wave_timer:
-                self.wave_timer.count_down_text(self.screen)
+                self.wave_timer.count_down_text(self.screen, 1.0)
 
             pygame.display.flip()
             self.delta_time = self.clock.tick(60) / 1000
@@ -457,7 +470,8 @@ class GAME:
                     self.right_mouse_clicked = False
 
     def spawn_enemy_from_wave(self):
-        enemy = self.wave_list[self.wave_counter].spawn_enemy(self.start_point)
+        speed_multiplier = 2.0 if self.speed_2x_mode else 1.0
+        enemy = self.wave_list[self.wave_counter].spawn_enemy(self.start_point, speed_multiplier)
         if enemy:
             enemy.on_tile = 1
             self.enemy_list.append(enemy)
@@ -493,17 +507,41 @@ class GAME:
                                          (tile.x * self.COL_SIZE, (tile.y * self.ROW_SIZE) + self.header_size,self.COL_SIZE, self.ROW_SIZE))
 
     def draw_enemies(self):
+        # Use a copy of the list to safely remove enemies during iteration
+        enemies_to_remove = []
+        
         for enemy in self.enemy_list:
-            enemy.enemy_rect = pygame.draw.circle(self.screen, enemy.color, (enemy.x * self.COL_SIZE + self.COL_SIZE * 0.5,
+            # Update slow effects
+            enemy.update_slow_effect(self.delta_time)
+            
+            # Update burn effects and check if enemy died from burn damage
+            speed_multiplier = 2.0 if self.speed_2x_mode else 1.0
+            died_from_burn = enemy.update_burn_effect(self.delta_time, speed_multiplier)
+            
+            # Check if enemy died from burn damage
+            if died_from_burn:
+                self.player_money += enemy.kill_reward
+                self.kills += 1
+                enemies_to_remove.append(enemy)
+                continue  # Skip processing this enemy further
+            
+            # Use visual effect color that shows slow and burn effects
+            display_color = enemy.get_visual_effect_color()
+            enemy.enemy_rect = pygame.draw.circle(self.screen, display_color, (enemy.x * self.COL_SIZE + self.COL_SIZE * 0.5,
                                                         (enemy.y * self.ROW_SIZE + self.ROW_SIZE * 0.5)+self.header_size), self.COL_SIZE // 2)
 
+            # Draw health bars
             pygame.draw.rect(self.screen, (0,0,0), ((enemy.x * self.COL_SIZE)-1, (((enemy.y+0.8) * self.ROW_SIZE)-1)+self.header_size, self.COL_SIZE+2, 12))
             pygame.draw.rect(self.screen, (255,0,0),((enemy.x * self.COL_SIZE), (enemy.y + 0.8) * self.ROW_SIZE+self.header_size, self.COL_SIZE,10))
-            pygame.draw.rect(self.screen, (0,255,0),((enemy.x * self.COL_SIZE), ((enemy.y + 0.8) * self.ROW_SIZE)+self.header_size, self.COL_SIZE/enemy.health*enemy.current_health,10))
+            # Calculate health bar width, avoiding division by zero
+            health_bar_width = (self.COL_SIZE * enemy.current_health / enemy.health) if enemy.health > 0 else 0
+            pygame.draw.rect(self.screen, (0,255,0),((enemy.x * self.COL_SIZE), ((enemy.y + 0.8) * self.ROW_SIZE)+self.header_size, health_bar_width,10))
 
+            # Enemy movement logic
             ang = math.atan2(self.path[enemy.on_tile].y - self.path[enemy.on_tile-1].y, self.path[enemy.on_tile].x - self.path[enemy.on_tile-1].x)
-            enemy.x += math.cos(ang) * enemy.movement_speed * self.delta_time
-            enemy.y += math.sin(ang) * enemy.movement_speed * self.delta_time
+            effective_delta = self.get_effective_delta_time()
+            enemy.x += math.cos(ang) * enemy.movement_speed * effective_delta
+            enemy.y += math.sin(ang) * enemy.movement_speed * effective_delta
 
             temp_x = self.path[enemy.on_tile].x - self.path[enemy.on_tile - 1].x
             temp_y = self.path[enemy.on_tile].y - self.path[enemy.on_tile - 1].y
@@ -536,7 +574,12 @@ class GAME:
                     if self.hit_channel and self.hit_channel.get_busy():
                         self.hit_channel.stop()
                     self.hit_channel = self.hit_sound.play()
-                    self.enemy_list.remove(enemy)
+                    enemies_to_remove.append(enemy)
+        
+        # Remove enemies that died from burn damage or reached the end
+        for enemy in enemies_to_remove:
+            if enemy in self.enemy_list:
+                self.enemy_list.remove(enemy)
 
     def draw_towers(self):
         for tower in self.tower_list:
@@ -550,15 +593,21 @@ class GAME:
 
             temp_pink_tower = TOWER(1 * self.COL_SIZE, 4 * self.ROW_SIZE, "circle", self.COL_SIZE, self.ROW_SIZE, self.pink_color)
             temp_gray_tower = TOWER(1 * self.COL_SIZE, 5 * self.ROW_SIZE, "basic", self.COL_SIZE, self.ROW_SIZE, self.gray_color)
-            #temp_orange_tower = TOWER(1 * self.COL_SIZE, 6 * self.ROW_SIZE, "arc", self.COL_SIZE, self.ROW_SIZE, self.orange_color)
+            temp_ice_tower = TOWER(1 * self.COL_SIZE, 6 * self.ROW_SIZE, "ice", self.COL_SIZE, self.ROW_SIZE, self.ice_color)
+            temp_fire_tower = TOWER(1 * self.COL_SIZE, 7 * self.ROW_SIZE, "fire", self.COL_SIZE, self.ROW_SIZE, self.fire_color)
+            #temp_orange_tower = TOWER(1 * self.COL_SIZE, 8 * self.ROW_SIZE, "arc", self.COL_SIZE, self.ROW_SIZE, self.orange_color)
 
             self.pink_tower = temp_pink_tower.draw(self.screen, self.COL_SIZE // 2)
             self.gray_tower = temp_gray_tower.draw(self.screen, self.COL_SIZE // 2)
+            self.ice_tower = temp_ice_tower.draw(self.screen, self.COL_SIZE // 2)
+            self.fire_tower = temp_fire_tower.draw(self.screen, self.COL_SIZE // 2)
             #self.orange_tower = temp_orange_tower.draw(self.screen, self.COL_SIZE // 2)
 
             self.screen.blit(self.tower_menu_font.render("{}$".format(temp_pink_tower.cost),False,(0,0,0)),(2 * self.COL_SIZE, 3.5 * self.ROW_SIZE))
             self.screen.blit(self.tower_menu_font.render("{}$".format(temp_gray_tower.cost), False, (0, 0, 0)), (2 * self.COL_SIZE, 4.5 * self.ROW_SIZE))
-            #self.screen.blit(self.tower_menu_font.render("{}$".format(temp_orange_tower.cost), False, (0, 0, 0)),(2 * self.COL_SIZE, 5.5 * self.ROW_SIZE))
+            self.screen.blit(self.tower_menu_font.render("{}$".format(temp_ice_tower.cost), False, (0, 0, 0)), (2 * self.COL_SIZE, 5.5 * self.ROW_SIZE))
+            self.screen.blit(self.tower_menu_font.render("{}$".format(temp_fire_tower.cost), False, (0, 0, 0)), (2 * self.COL_SIZE, 6.5 * self.ROW_SIZE))
+            #self.screen.blit(self.tower_menu_font.render("{}$".format(temp_orange_tower.cost), False, (0, 0, 0)),(2 * self.COL_SIZE, 7.5 * self.ROW_SIZE))
 
             for line in self.arr:
                 for tile in line:
@@ -671,8 +720,9 @@ class GAME:
                 bullet.bullet_rect = pygame.draw.circle(self.screen, (255, 0, 0), (bullet.my_x * self.COL_SIZE, (
                             bullet.my_y * self.ROW_SIZE) + self.header_size), bullet.size)
                 ang = math.atan2(bullet.y_vec, bullet.x_vec)
-                bullet.my_x += math.cos(ang) * bullet.velocity * self.delta_time
-                bullet.my_y += math.sin(ang) * bullet.velocity * self.delta_time
+                effective_delta = self.get_effective_delta_time()
+                bullet.my_x += math.cos(ang) * bullet.velocity * effective_delta
+                bullet.my_y += math.sin(ang) * bullet.velocity * effective_delta
 
                 x_d = tower.x * self.COL_SIZE + self.COL_SIZE * 0.5 - bullet.my_x * self.COL_SIZE
                 y_d = tower.y * self.ROW_SIZE + self.ROW_SIZE * 0.5  - bullet.my_y * self.ROW_SIZE
@@ -700,6 +750,24 @@ class GAME:
             self.skip_timer_button.draw_from_color(self.screen)
             self.skip_timer_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
 
+        # Draw 2x speed button with appropriate color based on current state
+        if self.speed_2x_mode:
+            self.speed_2x_button.color_default = (200, 50, 50)  # Red when active
+            self.speed_2x_button.color_hover = (220, 70, 70)
+        else:
+            self.speed_2x_button.color_default = (50, 150, 50)  # Green when inactive
+            self.speed_2x_button.color_hover = (70, 180, 70)
+        
+        self.speed_2x_button.draw_from_color(self.screen)
+        self.speed_2x_button.check_collision(pygame.mouse.get_pos(), self.mouse_clicked_once)
+        
+        # Draw speed text on the button (1x or 2x based on current mode)
+        speed_text_str = "2x" if self.speed_2x_mode else "1x"
+        speed_text = self.small_button_font.render(speed_text_str, True, (255, 255, 255))
+        text_rect = speed_text.get_rect(center=(self.speed_2x_button.start_x + self.speed_2x_button.width/2, 
+                                               self.speed_2x_button.start_y + self.speed_2x_button.height/2))
+        self.screen.blit(speed_text, text_rect)
+
         self.screen.blit(self.header_font.render("{m}$".format(m = self.player_money), False, (0,0,0)),
                          (self.screen.get_width()/4*0.8, 5))
         self.screen.blit(self.header_font.render("Wave {c}".format(c = self.wave_counter+1), False, (255, 255, 255)),
@@ -719,6 +787,14 @@ class GAME:
         if self.cost_dict["basic"] <= self.player_money and self.inventory_open and self.tower_counter < 1:
             self.move_gray_tower = self.check_clicked_tower(self.gray_tower, self.move_gray_tower)
         self.click_and_drag_tower(self.move_gray_tower, self.gray_color, "basic")
+
+        if self.cost_dict["ice"] <= self.player_money and self.inventory_open and self.tower_counter < 1:
+            self.move_ice_tower = self.check_clicked_tower(self.ice_tower, self.move_ice_tower)
+        self.click_and_drag_tower(self.move_ice_tower, self.ice_color, "ice")
+
+        if self.cost_dict["fire"] <= self.player_money and self.inventory_open and self.tower_counter < 1:
+            self.move_fire_tower = self.check_clicked_tower(self.fire_tower, self.move_fire_tower)
+        self.click_and_drag_tower(self.move_fire_tower, self.fire_color, "fire")
 
         if self.cost_dict["arc"] <= self.player_money and self.inventory_open and self.tower_counter < 1:
             self.move_orange_tower = self.check_clicked_tower(self.orange_tower, self.move_orange_tower)
@@ -744,6 +820,10 @@ class GAME:
                     self.draw_tower_radius(BasicTower(x , y, tower_type, self.COL_SIZE, self.ROW_SIZE, color), self.tower_drag_radius_color)
                 case "circle":
                     self.draw_tower_radius(CircleTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color), self.tower_drag_radius_color)
+                case "ice":
+                    self.draw_tower_radius(IceTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color), self.tower_drag_radius_color)
+                case "fire":
+                    self.draw_tower_radius(FireTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color), self.tower_drag_radius_color)
                 case "arc":
                     self.draw_tower_radius(ArcTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color), self.tower_drag_radius_color)
 
@@ -779,6 +859,12 @@ class GAME:
                     case "circle":
                         self.tower_list.append(
                             CircleTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                    case "ice":
+                        self.tower_list.append(
+                            IceTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
+                    case "fire":
+                        self.tower_list.append(
+                            FireTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
                     case "arc":
                         self.tower_list.append(
                             ArcTower(x, y, tower_type, self.COL_SIZE, self.ROW_SIZE, color))
@@ -789,17 +875,20 @@ class GAME:
     def reset_moving_tower(self):
         self.move_pink_tower = False
         self.move_gray_tower = False
+        self.move_ice_tower = False
+        self.move_fire_tower = False
         self.move_orange_tower = False
         self.tower_counter = 0
 
     def towers_fire(self):
+        speed_multiplier = 2.0 if self.speed_2x_mode else 1.0
         for tower in self.tower_list:
             for enemy in self.enemy_list:
                 x_d = tower.x * self.COL_SIZE - enemy.x * self.COL_SIZE
                 y_d = tower.y * self.ROW_SIZE - enemy.y * self.ROW_SIZE
                 distance = math.sqrt(math.pow(x_d,2) + math.pow(y_d,2))
                 if distance < tower.radius:
-                    tower.fire(enemy)
+                    tower.fire(enemy, speed_multiplier)
 
     def check_bullet_enemy_collision(self):
         for tower in self.tower_list:
@@ -807,9 +896,18 @@ class GAME:
                 for enemy in self.enemy_list:
                     if enemy.enemy_rect.colliderect(bullet.bullet_rect):
                         if not enemy.last_hit_by == bullet:
+                            # Apply direct damage
                             enemy.current_health -= bullet.damage
                             enemy.last_hit_by = bullet
                             bullet.pierce -= 1
+
+                            # Apply slow effect if it's an ice bullet
+                            if hasattr(bullet, 'is_ice_bullet') and bullet.is_ice_bullet:
+                                bullet.apply_effect_to_enemy(enemy)
+                            
+                            # Apply burn effect if it's a fire bullet
+                            if hasattr(bullet, 'is_fire_bullet') and bullet.is_fire_bullet:
+                                bullet.apply_effect_to_enemy(enemy)
 
                             self.bullet_sound_channel = self.bullet_hit_sound.play()
                             if self.bullet_sound_channel and self.bullet_sound_channel.get_busy():
@@ -899,8 +997,10 @@ class GAME:
         self.move_pink_tower = False
         self.move_orange_tower = None
         self.move_gray_tower = None
+        self.move_ice_tower = None
+        self.move_fire_tower = None
 
-        self.wave_timer = TIMER(self.header_font, (0, 0, 0), 15, self.screen.get_width() / 4 * 3, 5)
+        self.wave_timer = TIMER(self.header_font, (0, 0, 0), 15, self.screen.get_width()/4*2.8 + (self.COL_SIZE - 2)/2 - 10, 5)
     # </editor-fold>
 
     # <editor-fold desc="buttons">
@@ -936,6 +1036,14 @@ class GAME:
 
     def skip_button(self):
         self.wave_timer.second_counter = 0
+
+    def toggle_2x_speed(self):
+        self.speed_2x_mode = not self.speed_2x_mode
+
+    def get_effective_delta_time(self):
+        """Get delta time with speed multiplier applied"""
+        multiplier = 2.0 if self.speed_2x_mode else 1.0
+        return self.delta_time * multiplier
 
     def play_game(self ):
         self.main_menu = False

@@ -6,6 +6,19 @@ class ENEMY:
         self.enemy_rect = pygame.Rect(0,0,0,0)
         self.last_time_moved = 0
         self.last_hit_by = None
+        
+        # Ice/Slow effect properties
+        self.is_slowed = False
+        self.slow_intensity = 0.0  # 0.0 = no slow, 1.0 = completely frozen
+        self.slow_duration = 0.0  # Duration in seconds
+        self.base_movement_speed = 0  # Will be set after match statement
+        self.frozen_time_left = 0.0  # Remaining freeze time in seconds
+        
+        # Fire/Burn effect properties
+        self.is_burning = False
+        self.burn_stacks = []  # List of active burn effects [(damage_per_sec, duration_left), ...]
+        self.last_burn_tick = 0  # Last time burn damage was applied
+        self.first_burn_tick = True  # Flag to track if this is the first burn tick
 
         match enemy_type:
             case 1:
@@ -129,6 +142,134 @@ class ENEMY:
                 self.color = (255, 255, 255)
                 self.kill_reward = 100
         self.current_health = self.health
+        # Store the original movement speed for slow calculations
+        self.base_movement_speed = self.movement_speed
+
+    def apply_slow_effect(self, slow_intensity, duration):
+        """Apply a slow effect to the enemy. Higher intensity = more slowing."""
+        if slow_intensity > self.slow_intensity:  # Only apply if stronger than current slow
+            self.slow_intensity = min(slow_intensity, 0.95)  # Cap at 95% slow (never completely frozen)
+            self.slow_duration = duration
+            self.is_slowed = True
+            self.frozen_time_left = duration
+            # Update movement speed based on slow intensity
+            self.movement_speed = self.base_movement_speed * (1.0 - self.slow_intensity)
+
+    def update_slow_effect(self, delta_time):
+        """Update slow effect over time. Call this each frame."""
+        if self.is_slowed:
+            self.frozen_time_left -= delta_time
+            if self.frozen_time_left <= 0:
+                # Slow effect has worn off
+                self.is_slowed = False
+                self.slow_intensity = 0.0
+                self.slow_duration = 0.0
+                self.frozen_time_left = 0.0
+                self.movement_speed = self.base_movement_speed
+            else:
+                # Gradually reduce slow effect intensity as it wears off
+                remaining_ratio = self.frozen_time_left / self.slow_duration
+                current_intensity = self.slow_intensity * remaining_ratio
+                self.movement_speed = self.base_movement_speed * (1.0 - current_intensity)
+
+    def apply_burn_effect(self, burn_damage, duration, can_stack=True):
+        """Apply a burn effect to the enemy. Multiple burns can stack if allowed."""
+        if can_stack:
+            # Add new burn stack
+            self.burn_stacks.append([burn_damage, duration])
+            self.is_burning = True
+        else:
+            # Replace existing burn if new one is stronger
+            if not self.burn_stacks or burn_damage > max(stack[0] for stack in self.burn_stacks):
+                self.burn_stacks = [[burn_damage, duration]]
+                self.is_burning = True
+        
+        # Set the burn tick timer to current time (first tick will be delayed by 0.3 seconds)
+        if self.last_burn_tick == 0:
+            self.last_burn_tick = pygame.time.get_ticks()
+            self.first_burn_tick = True
+
+    def update_burn_effect(self, delta_time, speed_multiplier=1.0):
+        """Update burn effects over time and apply damage. Call this each frame."""
+        if self.is_burning and self.burn_stacks:
+            current_time = pygame.time.get_ticks()
+            
+            # Determine the tick interval: 300ms for first tick, 1000ms for subsequent ticks
+            # Scale the interval by speed multiplier (faster ticks in 2x mode)
+            base_first_interval = 300
+            base_normal_interval = 1000
+            tick_interval = (base_first_interval if self.first_burn_tick else base_normal_interval) / speed_multiplier
+            
+            # Apply burn damage based on the interval
+            if current_time - self.last_burn_tick >= tick_interval:
+                total_burn_damage = 0
+                
+                # Process all burn stacks
+                stacks_to_remove = []
+                for i, stack in enumerate(self.burn_stacks):
+                    burn_damage, duration_left = stack
+                    total_burn_damage += burn_damage
+                    
+                    # Reduce duration: 0.3 seconds for first tick, 1.0 second for subsequent ticks
+                    # Scale duration reduction by speed multiplier (faster burn consumption in 2x mode)
+                    base_duration_reduction = 0.3 if self.first_burn_tick else 1.0
+                    duration_reduction = base_duration_reduction * speed_multiplier
+                    stack[1] -= duration_reduction
+                    
+                    # Mark for removal if expired
+                    if stack[1] <= 0:
+                        stacks_to_remove.append(i)
+                
+                # Remove expired stacks (in reverse order to maintain indices)
+                for i in reversed(stacks_to_remove):
+                    self.burn_stacks.pop(i)
+                
+                # Apply total burn damage
+                if total_burn_damage > 0:
+                    self.current_health -= total_burn_damage
+                
+                # Update burning status
+                if not self.burn_stacks:
+                    self.is_burning = False
+                
+                # Update the flag after first tick
+                if self.first_burn_tick:
+                    self.first_burn_tick = False
+                
+                self.last_burn_tick = current_time
+                
+                # Return True if enemy died from burn damage
+                return self.current_health <= 0
+        
+        return False  # No burn damage applied or enemy still alive
+
+    def get_visual_effect_color(self):
+        """Return a color tint for visual feedback on effects."""
+        base_color = self.color
+        
+        # Apply burning effect (orange/red tint)
+        if self.is_burning:
+            fire_orange = (255, 100, 0)  # Bright orange color
+            burn_intensity = min(len(self.burn_stacks) * 0.3, 0.7)  # Intensity based on number of burn stacks
+            
+            # Blend original color with fire orange
+            r = int(base_color[0] * (1 - burn_intensity) + fire_orange[0] * burn_intensity)
+            g = int(base_color[1] * (1 - burn_intensity) + fire_orange[1] * burn_intensity)
+            b = int(base_color[2] * (1 - burn_intensity) + fire_orange[2] * burn_intensity)
+            base_color = (r, g, b)
+        
+        # Apply slowing effect (ice blue tint) - this can combine with burning for mixed colors
+        if self.is_slowed:
+            ice_blue = (173, 216, 230)  # Light blue color
+            slow_intensity = self.slow_intensity * 0.5  # Make ice effect less dominant
+            
+            # Blend current color (potentially already fire-tinted) with ice blue
+            r = int(base_color[0] * (1 - slow_intensity) + ice_blue[0] * slow_intensity)
+            g = int(base_color[1] * (1 - slow_intensity) + ice_blue[1] * slow_intensity)
+            b = int(base_color[2] * (1 - slow_intensity) + ice_blue[2] * slow_intensity)
+            base_color = (r, g, b)
+        
+        return base_color
 
 def enemy_list_data():
     return {
